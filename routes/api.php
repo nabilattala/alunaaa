@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AboutController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LandingPageController;
@@ -18,6 +20,7 @@ Route::prefix('users')->group(function () {
 });
 
 // Authentication Routes
+Route::get('/landing-page', [LandingPageController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -45,4 +48,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [ProductController::class, 'destroy']);
     });
 
+
+
+    Route::prefix('banners')->group(function () {
+        Route::get('/', [BannerController::class, 'index']);
+        Route::post('/store', [BannerController::class, 'store']);
+        Route::get('/{id}', [BannerController::class, 'show']);
+        Route::put('/{id}', [BannerController::class, 'update']);
+        Route::delete('/{id}', [BannerController::class, 'destroy']);
+    });
+
+
+    Route::prefix('abouts')->group(function () {
+        Route::get('/', [AboutController::class, 'index']);
+        Route::post('/store', [AboutController::class, 'store']);
+        Route::put('/{id}', [AboutController::class, 'update']);
+        Route::delete('/{id}', [AboutController::class, 'destroy']);
+    });
 });
