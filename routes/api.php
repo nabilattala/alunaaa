@@ -2,8 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LandingPageController;
 
@@ -32,17 +33,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [CategoryController::class, 'update']);
         Route::delete('/{id}', [CategoryController::class, 'destroy']);
     });
-
     
-        // CRUD untuk Landing Page
-        Route::prefix('landing-pages')->group(function () {
-            Route::get('/', [LandingPageController::class, 'index']); // Menampilkan semua landing pages
-            Route::get('/{id}', [LandingPageController::class, 'show']); // Menampilkan landing page berdasarkan ID
-            Route::post('/', [LandingPageController::class, 'store']); // Menambahkan landing page baru
-            Route::put('/{id}', [LandingPageController::class, 'update']); // Mengupdate landing page
-            Route::delete('/{id}', [LandingPageController::class, 'destroy']); // Menghapus landing page
-        });
-
-
+    
+    
+    //produk routes
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProductController::class, 'index']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+        Route::post('/store', [ProductController::class, 'store']);
+        Route::put('/{id}', [ProductController::class, 'update']);
+        Route::delete('/{id}', [ProductController::class, 'destroy']);
+    });
 
 });
