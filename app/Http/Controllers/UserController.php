@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,8 +12,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all();
-        return response()->json(['users' => $users]);
+        return UserResource::collection(User::all());
     }
 
     public function show($id)
@@ -21,7 +21,7 @@ class UserController extends Controller
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
-        return response()->json(['user' => $user]);
+        return new UserResource($user);
     }
 
     public function store(Request $request)
@@ -44,7 +44,7 @@ class UserController extends Controller
             'role' => $request->role,
         ]);
 
-        return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
+        return new UserResource($user);
     }
 
     public function update(Request $request, $id)
@@ -54,25 +54,9 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
-            'password' => 'sometimes|string|min:6',
-            'role' => 'sometimes|in:admin,kelas,pengguna'
-        ]);
+        $user->update($request->all());
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $user->update([
-            'name' => $request->name ?? $user->name,
-            'email' => $request->email ?? $user->email,
-            'password' => $request->password ? Hash::make($request->password) : $user->password,
-            'role' => $request->role ?? $user->role,
-        ]);
-
-        return response()->json(['message' => 'User updated successfully', 'user' => $user]);
+        return new UserResource($user);
     }
 
     public function destroy($id)
@@ -86,3 +70,4 @@ class UserController extends Controller
         return response()->json(['message' => 'User deleted successfully']);
     }
 }
+

@@ -27,4 +27,14 @@ class User extends Authenticatable
     {
         return ['admin', 'kelas', 'pengguna'];
     }
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
 }

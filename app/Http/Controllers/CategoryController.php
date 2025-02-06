@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -10,8 +11,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
-        return response()->json(['categories' => $categories]);
+        return CategoryResource::collection(Category::all());
     }
 
     public function show($id)
@@ -20,26 +20,23 @@ class CategoryController extends Controller
         if (!$category) {
             return response()->json(['message' => 'Category not found'], 404);
         }
-        return response()->json(['category' => $category]);
+        return new CategoryResource($category);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:categories',
-            'description' => 'nullable|string',
+            
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $category = Category::create([
-            'name' => $request->name,
-            'description' => $request->description,
-        ]);
+        $category = Category::create($request->all());
 
-        return response()->json(['message' => 'Category created successfully', 'category' => $category], 201);
+        return new CategoryResource($category);
     }
 
     public function update(Request $request, $id)
@@ -51,19 +48,16 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255|unique:categories,name,' . $id,
-            'description' => 'nullable|string',
+            
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $category->update([
-            'name' => $request->name ?? $category->name,
-            'description' => $request->description ?? $category->description,
-        ]);
+        $category->update($request->all());
 
-        return response()->json(['message' => 'Category updated successfully', 'category' => $category]);
+        return new CategoryResource($category);
     }
 
     public function destroy($id)
