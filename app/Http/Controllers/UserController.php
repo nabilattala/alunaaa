@@ -14,7 +14,7 @@ class UserController extends Controller
     public function index()
     {
         // Mengambil semua data pengguna dan mengembalikannya sebagai resource
-        return UserResource::collection(User::all());
+        return UserResource::collection(User::paginate(10)); // Menampilkan 10 data per halaman
     }
 
     // Menampilkan data pengguna berdasarkan ID
