@@ -13,7 +13,9 @@ return new class extends Migration {
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
             $table->string('order_id')->unique();
             $table->integer('total_price');
-            $table->string('status')->default('pending');
+            $table->enum('status', ['completed', 'pending', 'cancelled'])->default('pending');
+            $table->enum('payment_status', ['paid', 'unpaid', 'expired'])->default('unpaid');
+            $table->string('payment_url')->nullable();
             $table->timestamps();
         });
     }

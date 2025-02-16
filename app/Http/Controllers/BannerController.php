@@ -11,7 +11,7 @@ class BannerController extends Controller
 {
     public function index()
     {
-        return BannerResource::collection(Banner::all());
+        return BannerResource::collection(Banner::paginate(10));
     }
 
     public function store(Request $request)

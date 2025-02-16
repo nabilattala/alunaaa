@@ -21,8 +21,8 @@ class ProductSeeder extends Seeder
                 'url' => 'https://example.com',
                 'category_id' => $category->id,
                 'user_id' => $users->random()->id,
+                'price' => 50000,
             ]);
         }
     }
 }
-

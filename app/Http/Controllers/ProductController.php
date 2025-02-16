@@ -3,24 +3,41 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with(['category', 'user'])->get();
-        return response()->json(['products' => $products]);
-    }
+        $query = Product::with(['category', 'user']);
 
-    public function show($id)
-    {
-        $product = Product::with(['category', 'user'])->find($id);
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+        // Pencarian
+        if ($request->has('search')) {
+            $query->search($request->search);
         }
-        return response()->json(['product' => $product]);
+
+        // Filter
+        $query->filter($request->only([
+            'category_id',
+            'min_price',
+            'max_price',
+            'user_id',
+            'status'
+        ]));
+
+        // Sorting
+        $sortField = $request->input('sort_by', 'created_at');
+        $sortDirection = $request->input('sort_direction', 'desc');
+        $query->orderBy($sortField, $sortDirection);
+
+        // Pagination
+        $perPage = $request->input('per_page', 10);
+        $products = $query->paginate($perPage);
+
+        return ProductResource::collection($products);
     }
 
     public function store(Request $request)
@@ -28,10 +45,11 @@ class ProductController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'url' => 'required|url',
-            'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+            'url' => 'nullable|url',
+            'image' => 'required|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'required|exists:categories,id',
-            'user_id' => 'required|exists:users,id',
+            'price' => 'required|numeric|min:0',
+            'status' => 'required|in:active,inactive'
         ]);
 
         if ($validator->fails()) {
@@ -39,6 +57,7 @@ class ProductController extends Controller
         }
 
         $data = $request->except('image');
+        $data['user_id'] = auth()->id();
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -46,14 +65,16 @@ class ProductController extends Controller
 
         $product = Product::create($data);
 
-        return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
+        return new ProductResource($product);
     }
 
     public function update(Request $request, $id)
     {
-        $product = Product::find($id);
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+        $product = Product::findOrFail($id);
+
+        // Cek apakah user memiliki akses
+        if (auth()->user()->role === 'kelas' && $product->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -62,7 +83,8 @@ class ProductController extends Controller
             'url' => 'sometimes|url',
             'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'sometimes|exists:categories,id',
-            'user_id' => 'sometimes|exists:users,id',
+            'price' => 'sometimes|numeric|min:0',
+            'status' => 'sometimes|in:active,inactive'
         ]);
 
         if ($validator->fails()) {
@@ -72,22 +94,33 @@ class ProductController extends Controller
         $data = $request->except('image');
 
         if ($request->hasFile('image')) {
+            // Hapus gambar lama jika ada
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
         $product->update($data);
 
-        return response()->json(['message' => 'Product updated successfully', 'product' => $product]);
+        return new ProductResource($product);
     }
 
     public function destroy($id)
     {
-        $product = Product::find($id);
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+        $product = Product::findOrFail($id);
+
+        // Cek apakah user memiliki akses
+        if (auth()->user()->role === 'kelas' && $product->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
         }
 
         $product->delete();
+
         return response()->json(['message' => 'Product deleted successfully']);
     }
 }

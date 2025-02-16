@@ -18,13 +18,12 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Protected Routes (Perlu Autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
-
     // Authentication
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
 
     // User Management (Admin Only)
-    Route::prefix('users')->middleware(['role:admin'])->group(function () {
+    Route::prefix('users')->middleware('role:admin')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::get('/{id}', [UserController::class, 'show']);
         Route::post('/', [UserController::class, 'store']);
@@ -32,65 +31,75 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
-    // Category Routes (Admin Only)
-    Route::prefix('categories')->middleware(['role:admin'])->group(function () {
+    // Category Routes
+    Route::prefix('categories')->group(function () {
+        // Public routes (authenticated)
         Route::get('/', [CategoryController::class, 'index']);
         Route::get('/{id}', [CategoryController::class, 'show']);
-        Route::post('/', [CategoryController::class, 'store']);
-        Route::put('/{id}', [CategoryController::class, 'update']);
-        Route::delete('/{id}', [CategoryController::class, 'destroy']);
+
+        // Admin only routes
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/', [CategoryController::class, 'store']);
+            Route::put('/{id}', [CategoryController::class, 'update']);
+            Route::delete('/{id}', [CategoryController::class, 'destroy']);
+        });
     });
+
 
     // Product Routes
     Route::prefix('products')->group(function () {
-        // Admin & Kelas bisa CRUD produk
-        Route::middleware(['role:admin|kelas'])->group(function () {
-            Route::get('/', [ProductController::class, 'index']);
-            Route::get('/{id}', [ProductController::class, 'show']);
+        // Routes untuk semua user
+        Route::get('/', [ProductController::class, 'index']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+
+        // Routes untuk admin dan kelas
+        Route::middleware('role:admin,kelas')->group(function () {
             Route::post('/', [ProductController::class, 'store']);
             Route::put('/{id}', [ProductController::class, 'update']);
             Route::delete('/{id}', [ProductController::class, 'destroy']);
         });
+    });
 
-        // Pengguna hanya bisa melihat produk
-        Route::middleware(['role:pengguna'])->group(function () {
-            Route::get('/', [ProductController::class, 'index']);
-            Route::get('/{id}', [ProductController::class, 'show']);
+
+    // Admin Routes
+    Route::middleware('role:admin')->group(function () {
+        // Banner Management
+        Route::prefix('banners')->group(function () {
+            Route::get('/', [BannerController::class, 'index']);
+            Route::post('/', [BannerController::class, 'store']);
+            Route::get('/{id}', [BannerController::class, 'show']);
+            Route::put('/{id}', [BannerController::class, 'update']);
+            Route::delete('/{id}', [BannerController::class, 'destroy']);
+        });
+
+        // About Management
+        Route::prefix('abouts')->group(function () {
+            Route::get('/', [AboutController::class, 'index']);
+            Route::post('/', [AboutController::class, 'store']);
+            Route::put('/{id}', [AboutController::class, 'update']);
+            Route::delete('/{id}', [AboutController::class, 'destroy']);
         });
     });
 
-    // Banner Routes (Admin Only)
-    Route::prefix('banners')->middleware(['role:admin'])->group(function () {
-        Route::get('/', [BannerController::class, 'index']);
-        Route::post('/', [BannerController::class, 'store']);
-        Route::get('/{id}', [BannerController::class, 'show']);
-        Route::put('/{id}', [BannerController::class, 'update']);
-        Route::delete('/{id}', [BannerController::class, 'destroy']);
-    });
 
-    // About Routes (Admin Only)
-    Route::prefix('abouts')->middleware(['role:admin'])->group(function () {
-        Route::get('/', [AboutController::class, 'index']);
-        Route::post('/', [AboutController::class, 'store']);
-        Route::put('/{id}', [AboutController::class, 'update']);
-        Route::delete('/{id}', [AboutController::class, 'destroy']);
-    });
-
+    
     // Order Routes
     Route::prefix('orders')->group(function () {
-        Route::middleware(['role:admin|kelas|pengguna'])->group(function () {
+        // Routes untuk admin, kelas, dan pengguna
+        Route::middleware('role:admin,kelas,pengguna')->group(function () {
             Route::get('/', [OrderController::class, 'index']);
             Route::get('/{order}', [OrderController::class, 'show']);
         });
 
-        Route::middleware(['role:admin|pengguna'])->group(function () {
+        // Routes khusus pengguna
+        Route::middleware('role:pengguna')->group(function () {
             Route::post('/', [OrderController::class, 'store']);
         });
 
-        Route::middleware(['role:admin'])->group(function () {
-            Route::put('/{order_id}/status', [OrderController::class, 'updateStatus']);
+        // Routes khusus admin
+        Route::middleware('role:admin')->group(function () {
+            Route::put('/{order}/status', [OrderController::class, 'updateStatus']);
             Route::delete('/{order}', [OrderController::class, 'destroy']);
         });
     });
-
 });
