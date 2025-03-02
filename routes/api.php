@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
@@ -42,17 +43,13 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // Product Routes
-    Route::prefix('products')->group(function () {
-        Route::get('/', [ProductController::class, 'index']);
-        Route::get('/{id}', [ProductController::class, 'show']);
-        
-        // Routes untuk admin dan kelas
-        Route::middleware('role:admin,kelas')->group(function () {
-            Route::post('/', [ProductController::class, 'store']);
-            Route::put('/{id}', [ProductController::class, 'update']);
-            Route::delete('/{id}', [ProductController::class, 'destroy']);
-        });
+    // Product Routes (Admin dan Kelas)
+    Route::middleware(['auth:sanctum', 'role:admin,kelas'])->group(function () {
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    });
+    
 
         // Route khusus admin untuk mengubah harga produk
         Route::middleware('role:admin')->group(function () {
@@ -80,6 +77,14 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
+    // Chat Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/chat/start', [ChatController::class, 'startChat']); // Pembeli memulai chat
+        Route::get('/chat', [ChatController::class, 'getChats']); // Ambil semua chat berdasarkan peran
+        Route::get('/chat/{chatId}/messages', [ChatController::class, 'getMessages']); // Ambil pesan dalam chat
+        Route::post('/chat/send', [ChatController::class, 'sendMessage']); // Kirim pesan
+    });
+
     // Order Routes
     Route::prefix('orders')->group(function () {
         Route::middleware('role:admin,kelas,pengguna')->group(function () {
@@ -96,4 +101,3 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{order}', [OrderController::class, 'destroy']);
         });
     });
-});

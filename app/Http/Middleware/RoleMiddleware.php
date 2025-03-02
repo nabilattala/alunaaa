@@ -8,16 +8,12 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, $role)
+    public function handle(Request $request, Closure $next, ...$roles)
     {
-        // Pastikan user sudah login
-        if (!Auth::check()) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
+        $user = Auth::user();
 
-        // Cek apakah role user sesuai dengan yang diizinkan
-        if (Auth::user()->role !== $role) {
-            return response()->json(['message' => 'Forbidden'], 403);
+        if (!$user || !in_array($user->role, $roles)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         return $next($request);
