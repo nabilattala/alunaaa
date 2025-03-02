@@ -7,6 +7,7 @@ use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -14,12 +15,9 @@ class ProductController extends Controller
     {
         $query = Product::with(['category', 'user']);
 
-        // Pencarian
         if ($request->has('search')) {
             $query->search($request->search);
         }
-
-        // Filter
         $query->filter($request->only([
             'category_id',
             'min_price',
@@ -28,12 +26,10 @@ class ProductController extends Controller
             'status'
         ]));
 
-        // Sorting
         $sortField = $request->input('sort_by', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
         $query->orderBy($sortField, $sortDirection);
 
-        // Pagination
         $perPage = $request->input('per_page', 10);
         $products = $query->paginate($perPage);
 
@@ -42,22 +38,33 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $rules = [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'url' => 'nullable|url',
             'image' => 'required|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
-            'status' => 'required|in:active,inactive'
-        ]);
+            'status' => 'required|in:active,inactive',
+        ];
+
+        if (auth()->user()->role === 'admin') {
+            $rules['price'] = 'nullable|numeric|min:0';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $request->except('image');
+        $data = $request->except(['image', 'price']);
         $data['user_id'] = auth()->id();
+
+        if (auth()->user()->role !== 'admin') {
+            $data['price'] = 0;
+        } else {
+            $data['price'] = $request->input('price', 0);
+        }
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -72,29 +79,36 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
 
-        // Cek apakah user memiliki akses
         if (auth()->user()->role === 'kelas' && $product->user_id !== auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $validator = Validator::make($request->all(), [
+        $rules = [
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'url' => 'sometimes|url',
             'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'sometimes|exists:categories,id',
-            'price' => 'sometimes|numeric|min:0',
-            'status' => 'sometimes|in:active,inactive'
-        ]);
+            'status' => 'sometimes|in:active,inactive',
+        ];
+
+        if (auth()->user()->role === 'admin') {
+            $rules['price'] = 'nullable|numeric|min:0';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $request->except('image');
+        $data = $request->except(['image', 'price']);
+
+        if (auth()->user()->role === 'admin' && $request->has('price')) {
+            $data['price'] = $request->input('price');
+        }
 
         if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
@@ -103,15 +117,40 @@ class ProductController extends Controller
 
         $product->update($data);
 
+        Log::info('Product updated', ['id' => $product->id, 'price' => $product->price]);
+
         return new ProductResource($product);
     }
+
+    public function updatePrice(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        // Pastikan hanya admin yang bisa mengubah harga
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        $product->update([
+            'price' => $request->price
+        ]);
+
+        return response()->json([
+            'message' => 'Harga produk berhasil diperbarui.',
+            'product' => new ProductResource($product)
+        ]);
+    }
+
 
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
 
-        // Cek apakah user memiliki akses
-        if (auth()->user()->role === 'kelas' && $product->user_id !== auth()->id()) {
+        if (auth()->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -121,6 +160,6 @@ class ProductController extends Controller
 
         $product->delete();
 
-        return response()->json(['message' => 'Product deleted successfully']);
+        return response()->json(['message' => 'Product deleted successfully'], 200);
     }
 }

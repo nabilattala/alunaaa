@@ -33,11 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Category Routes
     Route::prefix('categories')->group(function () {
-        // Public routes (authenticated)
         Route::get('/', [CategoryController::class, 'index']);
         Route::get('/{id}', [CategoryController::class, 'show']);
-
-        // Admin only routes
         Route::middleware('role:admin')->group(function () {
             Route::post('/', [CategoryController::class, 'store']);
             Route::put('/{id}', [CategoryController::class, 'update']);
@@ -45,21 +42,23 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-
     // Product Routes
     Route::prefix('products')->group(function () {
-        // Routes untuk semua user
         Route::get('/', [ProductController::class, 'index']);
         Route::get('/{id}', [ProductController::class, 'show']);
-
+        
         // Routes untuk admin dan kelas
         Route::middleware('role:admin,kelas')->group(function () {
             Route::post('/', [ProductController::class, 'store']);
             Route::put('/{id}', [ProductController::class, 'update']);
             Route::delete('/{id}', [ProductController::class, 'destroy']);
         });
-    });
 
+        // Route khusus admin untuk mengubah harga produk
+        Route::middleware('role:admin')->group(function () {
+            Route::put('/{id}/update-price', [ProductController::class, 'updatePrice']);
+        });
+    });
 
     // Admin Routes
     Route::middleware('role:admin')->group(function () {
@@ -81,22 +80,17 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-
-    
     // Order Routes
     Route::prefix('orders')->group(function () {
-        // Routes untuk admin, kelas, dan pengguna
         Route::middleware('role:admin,kelas,pengguna')->group(function () {
             Route::get('/', [OrderController::class, 'index']);
             Route::get('/{order}', [OrderController::class, 'show']);
         });
 
-        // Routes khusus pengguna
         Route::middleware('role:pengguna')->group(function () {
             Route::post('/', [OrderController::class, 'store']);
         });
 
-        // Routes khusus admin
         Route::middleware('role:admin')->group(function () {
             Route::put('/{order}/status', [OrderController::class, 'updateStatus']);
             Route::delete('/{order}', [OrderController::class, 'destroy']);

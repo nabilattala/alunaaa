@@ -16,8 +16,8 @@ class Product extends Model
         'image',
         'category_id',
         'user_id',
-        'price',
-        'status'
+        'status',
+        'price'
     ];
 
     protected $casts = [
@@ -36,20 +36,26 @@ class Product extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Event untuk menangani penghapusan kategori
+    // Event untuk memastikan harga hanya 0 jika bukan admin yang menambahkan
     public static function boot()
     {
         parent::boot();
 
         static::creating(function ($product) {
-            if (!$product->category_id) {
-                $uncategorized = Category::firstOrCreate(['name' => 'Uncategorized']);
-                $product->category_id = $uncategorized->id;
+            if (!isset($product->price) || (auth()->check() && auth()->user()->role !== 'admin')) {
+                $product->price = 0;
             }
+        });
+
+        static::updating(function ($product) {
+            \Log::info('Updating product', [
+                'product_id' => $product->id,
+                'new_price' => $product->price,
+                'role' => auth()->user()->role,
+            ]);
         });
     }
 
-    // Scope untuk pencarian
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
@@ -64,7 +70,6 @@ class Product extends Model
         });
     }
 
-    // Scope untuk filter
     public function scopeFilter($query, array $filters)
     {
         return $query->when($filters['category_id'] ?? false, function ($q, $category_id) {
