@@ -7,6 +7,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
@@ -53,7 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Route khusus admin untuk mengubah harga produk
         Route::middleware('role:admin')->group(function () {
-            Route::put('/{id}/update-price', [ProductController::class, 'updatePrice']);
+            Route::put('{id}/update-price', [ProductController::class, 'updatePrice']);
         });
     });
 
@@ -76,6 +78,24 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [AboutController::class, 'destroy']);
         });
     });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        // Cart Routes
+        Route::prefix('cart')->group(function () {
+            Route::get('/', [CartController::class, 'index']);
+            Route::post('/', [CartController::class, 'store']);
+            Route::put('/{id}', [CartController::class, 'update']);
+            Route::delete('/{id}', [CartController::class, 'destroy']);
+        });
+    
+        // Favorite Routes
+        Route::prefix('favorites')->group(function () {
+            Route::get('/', [FavoriteController::class, 'index']);
+            Route::post('/', [FavoriteController::class, 'store']);
+            Route::delete('/{id}', [FavoriteController::class, 'destroy']);
+        });
+    });
+    
 
     // Chat Routes
     Route::middleware('auth:sanctum')->group(function () {
