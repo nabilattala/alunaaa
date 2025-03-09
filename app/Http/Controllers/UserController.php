@@ -78,6 +78,33 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'address' => 'nullable|string',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->hasFile('profile_photo')) {
+            $file = $request->file('profile_photo');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->storeAs('uploads/profile', $filename, 'public');
+            $user->profile_photo = 'storage/uploads/profile/' . $filename;
+        }
+
+        $user->update($request->except('profile_photo'));
+
+        return new UserResource($user);
+    }
+
+
     // Menghapus pengguna berdasarkan ID
     public function destroy($id)
     {

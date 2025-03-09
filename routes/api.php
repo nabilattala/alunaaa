@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ChatController;
@@ -19,6 +20,12 @@ Route::get('/landing-page', [LandingPageController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Socialite Routes
+Route::middleware(['web'])->group(function () {
+    Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle']);
+    Route::get('/auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
+});
+
 // Protected Routes (Perlu Autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
     // Authentication
@@ -33,6 +40,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [UserController::class, 'update']);
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
+
+    // Update Profile Route
+    Route::middleware('auth:sanctum')->post('/user/update-profile', [UserController::class, 'updateProfile']);
 
     // Category Routes
     Route::prefix('categories')->group(function () {
