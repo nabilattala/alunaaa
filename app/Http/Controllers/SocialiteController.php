@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -10,24 +11,32 @@ class SocialiteController extends Controller
 {
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->redirect();
+        $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+        return response()->json(['url' => $url]);
     }
 
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
-        $googleUser = Socialite::driver('google')->user();
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::updateOrCreate([
-            'email' => $googleUser->getEmail(),
-        ], [
-            'name' => $googleUser->getName(),
-            'profile_photo' => $googleUser->getAvatar(),
-            'password' => bcrypt(str()->random(16)),
-        ]);
+            $user = User::updateOrCreate([
+                'email' => $googleUser->getEmail(),
+            ], [
+                'name' => $googleUser->getName(),
+                'password' => bcrypt('password_default'),
+            ]);
 
-        Auth::login($user);
+            // Generate Sanctum Token untuk API
+            $token = $user->createToken('google-auth-token')->plainTextToken;
 
-        return redirect('/dashboard');
+            return response()->json([
+                'message' => 'Login berhasil',
+                'user' => $user,
+                'token' => $token
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal login'], 500);
+        }
     }
 }
-

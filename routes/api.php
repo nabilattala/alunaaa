@@ -21,10 +21,9 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Socialite Routes
-Route::middleware(['web'])->group(function () {
-    Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle']);
-    Route::get('/auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
-});
+Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle']);
+Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
+
 
 // Protected Routes (Perlu Autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
