@@ -20,10 +20,8 @@ Route::get('/landing-page', [LandingPageController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Socialite Routes
+// Socialite Routes (Hanya Redirect, Callback di Web.php)
 Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle']);
-Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
-
 
 // Protected Routes (Perlu Autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
@@ -41,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Update Profile Route
-    Route::middleware('auth:sanctum')->post('/user/update-profile', [UserController::class, 'updateProfile']);
+    Route::post('/user/update-profile', [UserController::class, 'updateProfile']);
 
     // Category Routes
     Route::prefix('categories')->group(function () {
@@ -60,59 +58,32 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/products/{id}', [ProductController::class, 'update']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
     });
-    
 
-        // Route khusus admin untuk mengubah harga produk
-        Route::middleware('role:admin')->group(function () {
-            Route::put('{id}/update-price', [ProductController::class, 'updatePrice']);
-        });
-    });
-
-    // Admin Routes
+    // Route khusus admin untuk mengubah harga produk
     Route::middleware('role:admin')->group(function () {
-        // Banner Management
-        Route::prefix('banners')->group(function () {
-            Route::get('/', [BannerController::class, 'index']);
-            Route::post('/', [BannerController::class, 'store']);
-            Route::get('/{id}', [BannerController::class, 'show']);
-            Route::put('/{id}', [BannerController::class, 'update']);
-            Route::delete('/{id}', [BannerController::class, 'destroy']);
-        });
-
-        // About Management
-        Route::prefix('abouts')->group(function () {
-            Route::get('/', [AboutController::class, 'index']);
-            Route::post('/', [AboutController::class, 'store']);
-            Route::put('/{id}', [AboutController::class, 'update']);
-            Route::delete('/{id}', [AboutController::class, 'destroy']);
-        });
+        Route::put('{id}/update-price', [ProductController::class, 'updatePrice']);
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
-        // Cart Routes
-        Route::prefix('cart')->group(function () {
-            Route::get('/', [CartController::class, 'index']);
-            Route::post('/', [CartController::class, 'store']);
-            Route::put('/{id}', [CartController::class, 'update']);
-            Route::delete('/{id}', [CartController::class, 'destroy']);
-        });
-    
-        // Favorite Routes
-        Route::prefix('favorites')->group(function () {
-            Route::get('/', [FavoriteController::class, 'index']);
-            Route::post('/', [FavoriteController::class, 'store']);
-            Route::delete('/{id}', [FavoriteController::class, 'destroy']);
-        });
+    // Cart Routes
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);
+        Route::post('/', [CartController::class, 'store']);
+        Route::put('/{id}', [CartController::class, 'update']);
+        Route::delete('/{id}', [CartController::class, 'destroy']);
     });
-    
+
+    // Favorite Routes
+    Route::prefix('favorites')->group(function () {
+        Route::get('/', [FavoriteController::class, 'index']);
+        Route::post('/', [FavoriteController::class, 'store']);
+        Route::delete('/{id}', [FavoriteController::class, 'destroy']);
+    });
 
     // Chat Routes
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/chat/start', [ChatController::class, 'startChat']); // Pembeli memulai chat
-        Route::get('/chat', [ChatController::class, 'getChats']); // Ambil semua chat berdasarkan peran
-        Route::get('/chat/{chatId}/messages', [ChatController::class, 'getMessages']); // Ambil pesan dalam chat
-        Route::post('/chat/send', [ChatController::class, 'sendMessage']); // Kirim pesan
-    });
+    Route::post('/chat/start', [ChatController::class, 'startChat']); // Pembeli memulai chat
+    Route::get('/chat', [ChatController::class, 'getChats']); // Ambil semua chat berdasarkan peran
+    Route::get('/chat/{chatId}/messages', [ChatController::class, 'getMessages']); // Ambil pesan dalam chat
+    Route::post('/chat/send', [ChatController::class, 'sendMessage']); // Kirim pesan
 
     // Order Routes
     Route::prefix('orders')->group(function () {
@@ -130,3 +101,4 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{order}', [OrderController::class, 'destroy']);
         });
     });
+});
