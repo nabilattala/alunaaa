@@ -27,16 +27,21 @@ class SocialiteController extends Controller
                 'password' => bcrypt('password_default'),
             ]);
 
+            // Jika user belum memiliki username, beri tanda bahwa ini login pertama
+            $firstLogin = !$user->username;
+
             // Generate Sanctum Token untuk API
             $token = $user->createToken('google-auth-token')->plainTextToken;
 
             return response()->json([
                 'message' => 'Login berhasil',
                 'user' => $user,
-                'token' => $token
+                'token' => $token,
+                'first_login' => $firstLogin
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Gagal login'], 500);
         }
     }
+
 }

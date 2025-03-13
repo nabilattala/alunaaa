@@ -20,8 +20,9 @@ Route::get('/landing-page', [LandingPageController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Socialite Routes (Hanya Redirect, Callback di Web.php)
+// Socialite Routes (Redirect, Callback di Web.php, Register With Google)
 Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle']);
+Route::middleware('auth:sanctum')->post('/set-username', [UserController::class, 'setUsername']);
 
 // Protected Routes (Perlu Autentikasi)
 Route::middleware('auth:sanctum')->group(function () {

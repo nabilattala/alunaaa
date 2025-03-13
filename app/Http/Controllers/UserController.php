@@ -104,6 +104,25 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    public function setUsername(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'username' => 'required|string|max:255|unique:users,username',
+        ]);
+
+        $user->update([
+            'username' => $request->username,
+        ]);
+
+        return response()->json([
+            'message' => 'Username berhasil disimpan',
+            'user' => $user,
+        ]);
+    }
+
+
 
     // Menghapus pengguna berdasarkan ID
     public function destroy($id)
