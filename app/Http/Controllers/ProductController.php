@@ -121,6 +121,28 @@ class ProductController extends Controller
         ]);
     }
 
+    public function applyDiscount(Request $request, $id)
+    {
+        $request->validate([
+            'code' => 'required|string|exists:discounts,code'
+        ]);
+
+        $product = Product::findOrFail($id);
+        $discount = Discount::where('code', $request->code)->whereDate('expires_at', '>=', now())->first();
+
+        if (!$discount) {
+            return response()->json(['message' => 'Invalid or expired discount code'], 400);
+        }
+
+        $discountedPrice = $product->price - ($product->price * ($discount->percentage / 100));
+        
+        return response()->json([
+            'original_price' => $product->price,
+            'discount_percentage' => $discount->percentage,
+            'discounted_price' => $discountedPrice
+        ]);
+    }
+
     public function destroy($id)
     {
         $product = Product::findOrFail($id);

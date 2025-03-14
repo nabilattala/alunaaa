@@ -102,4 +102,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{order}', [OrderController::class, 'destroy']);
         });
     });
+
+    // 
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/discounts', [DiscountController::class, 'index']);
+        Route::post('/discounts', [DiscountController::class, 'store']);
+        Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
+    
+        Route::post('/products/{id}/apply-discount', [ProductController::class, 'applyDiscount']);
+    });
+    
 });
