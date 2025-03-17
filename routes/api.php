@@ -103,13 +103,19 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // 
+    // Route Discount
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/discounts', [DiscountController::class, 'index']);
         Route::post('/discounts', [DiscountController::class, 'store']);
         Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
     
         Route::post('/products/{id}/apply-discount', [ProductController::class, 'applyDiscount']);
+    });
+
+    // Route Update & Request Price
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/products/{id}/request-price', [ProductController::class, 'requestPrice']); // Penjual request harga
+        Route::post('/price-requests/{id}/approve', [ProductController::class, 'approvePriceRequest']); // Admin menyetujui harga
     });
     
 });
