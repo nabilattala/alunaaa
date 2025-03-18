@@ -36,6 +36,12 @@ class Product extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function discounts()
+    {
+        return $this->hasMany(Discount::class);
+    }
+
+
     // Event untuk memastikan harga hanya 0 jika bukan admin yang menambahkan
     public static function boot()
     {

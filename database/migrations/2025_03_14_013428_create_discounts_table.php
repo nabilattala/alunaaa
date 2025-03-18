@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('discounts', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade'); // Produk yang mendapatkan diskon
+            $table->string('code')->nullable()->unique(); // Kode opsional dan unik jika diisi
             $table->integer('percentage'); // Diskon dalam persen
             $table->date('expires_at'); // Tanggal kedaluwarsa
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade'); // Admin yang membuat

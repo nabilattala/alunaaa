@@ -21,7 +21,8 @@ class DiscountController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'code' => 'required|string|unique:discounts|max:255',
+            'product_id' => 'required|exists:products,id', // Produk wajib ada
+            'code' => 'nullable|string|unique:discounts|max:255', // Kode bisa kosong
             'percentage' => 'required|integer|min:1|max:100',
             'expires_at' => 'required|date|after:today',
         ]);
@@ -31,7 +32,8 @@ class DiscountController extends Controller
         }
 
         $discount = Discount::create([
-            'code' => $request->code,
+            'product_id' => $request->product_id,
+            'code' => $request->code, // Bisa null
             'percentage' => $request->percentage,
             'expires_at' => $request->expires_at,
             'created_by' => auth()->id(),
@@ -39,6 +41,7 @@ class DiscountController extends Controller
 
         return response()->json($discount, 201);
     }
+
 
     public function destroy($id)
     {

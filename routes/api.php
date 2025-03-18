@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DiscountController;
 use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\OrderController;
@@ -117,5 +118,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/products/{id}/request-price', [ProductController::class, 'requestPrice']); // Penjual request harga
         Route::post('/price-requests/{id}/approve', [ProductController::class, 'approvePriceRequest']); // Admin menyetujui harga
     });
+
+    // Product Routes (Public)
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+
     
 });

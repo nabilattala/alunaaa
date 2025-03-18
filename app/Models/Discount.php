@@ -10,7 +10,7 @@ class Discount extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'percentage', 'expires_at', 'created_by'
+        'product_id', 'code', 'percentage', 'expires_at', 'created_by'
     ];
 
     protected $casts = [
