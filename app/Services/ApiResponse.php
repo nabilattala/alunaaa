@@ -10,7 +10,7 @@ class ApiResponse
     public static function success($data = null, $message = 'Success', $code = 200)
     {
         return response()->json([
-            'data' => $data
+            'data' => $data,
             'status' => 'success',
             'message' => $message,
         ], $code);
