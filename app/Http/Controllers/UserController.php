@@ -7,14 +7,29 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Response;
 
 class UserController extends Controller
 {
-    // Menampilkan seluruh data pengguna
+    // Menampilkan seluruh data pengguna yang aktif
     public function index()
     {
-        // Mengambil semua data pengguna dan mengembalikannya sebagai resource
-        return UserResource::collection(User::paginate(10)); // Menampilkan 10 data per halaman
+        try {
+            // Mengambil semua pengguna yang aktif
+            $activeUsers = User::where('is_active', true)->get();
+
+            return response()->json([
+                'message' => 'Active user data retrieved successfully.',
+                'data' => UserResource::collection($activeUsers), // Menggunakan collection untuk multiple users
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            // Log error jika terjadi kesalahan
+            \Log::error("Error occurred while fetching active user data: " . $e->getMessage());
+
+            return response()->json([
+                'message' => 'An error occurred while fetching active user data.',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     // Menampilkan data pengguna berdasarkan ID
@@ -22,10 +37,10 @@ class UserController extends Controller
     {
         // Mencari pengguna berdasarkan ID
         $user = User::find($id);
-        
+
         // Jika pengguna tidak ditemukan, mengembalikan respon error
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
         // Mengembalikan data pengguna yang ditemukan dalam bentuk resource
@@ -40,12 +55,13 @@ class UserController extends Controller
             'name' => 'required|string|max:255',  // Nama pengguna wajib diisi
             'email' => 'required|string|email|max:255|unique:users',  // Email wajib unik
             'password' => 'required|string|min:8',  // Password minimal 8 karakter
-            'role' => 'required|in:admin,kelas,pengguna'  // Role harus salah satu dari admin, kelas, atau pengguna
+            'role' => 'required|in:admin,kelas,pengguna',  // Role harus salah satu dari admin, kelas, atau pengguna
+            'is_active' => 'boolean',  // Kolom is_active opsional, default true
         ]);
 
         // Jika validasi gagal, mengembalikan error
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         // Membuat pengguna baru
@@ -54,6 +70,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),  // Password harus dienkripsi
             'role' => $request->role,  // Menetapkan role pengguna
+            'is_active' => $request->is_active ?? true,  // Default is_active true jika tidak diisi
         ]);
 
         // Mengembalikan data pengguna yang baru dibuat sebagai resource
@@ -65,17 +82,52 @@ class UserController extends Controller
     {
         // Mencari pengguna berdasarkan ID
         $user = User::find($id);
-        
+
         // Jika pengguna tidak ditemukan, mengembalikan respon error
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Validasi input yang diterima
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|min:8',
+            'role' => 'sometimes|in:admin,kelas,pengguna',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        // Jika validasi gagal, mengembalikan error
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         // Mengupdate data pengguna dengan data yang diterima dari request
+        if ($request->has('password')) {
+            $request->merge(['password' => Hash::make($request->password)]);
+        }
         $user->update($request->all());
 
         // Mengembalikan data pengguna yang telah diperbarui sebagai resource
         return new UserResource($user);
+    }
+
+    // Menghapus pengguna berdasarkan ID
+    public function destroy($id)
+    {
+        // Mencari pengguna berdasarkan ID
+        $user = User::find($id);
+
+        // Jika pengguna tidak ditemukan, mengembalikan respon error
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Menghapus pengguna
+        $user->delete();
+
+        // Mengembalikan respon bahwa pengguna telah berhasil dihapus
+        return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
 
     public function updateProfile(Request $request)
@@ -93,8 +145,8 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('profile_photo')) {
-            $file = $request->file('profile_photo');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $file = $request->file('profilephoto');
+            $filename = time() . '' . $file->getClientOriginalName();
             $file->storeAs('uploads/profile', $filename, 'public');
             $user->profile_photo = 'storage/uploads/profile/' . $filename;
         }
@@ -121,24 +173,5 @@ class UserController extends Controller
             'user' => $user,
         ]);
     }
-
-
-
-    // Menghapus pengguna berdasarkan ID
-    public function destroy($id)
-    {
-        // Mencari pengguna berdasarkan ID
-        $user = User::find($id);
-        
-        // Jika pengguna tidak ditemukan, mengembalikan respon error
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        // Menghapus pengguna
-        $user->delete();
-        
-        // Mengembalikan respon bahwa pengguna telah berhasil dihapus
-        return response()->json(['message' => 'User deleted successfully']);
-    }
 }
+

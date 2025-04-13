@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('address')->nullable();
             $table->string('profile_photo')->nullable();
             $table->enum('role', ['admin', 'kelas', 'pengguna'])->default('pengguna');
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });
