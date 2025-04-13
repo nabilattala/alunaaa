@@ -19,18 +19,18 @@ class ApiResponse
     public static function error($message = 'Error', $code = 400, $data = null)
     {
         return response()->json([
+            'data' => $data,
             'status' => 'error',
             'message' => $message,
-            'data' => $data
         ], $code);
     }
 
     public static function validation($errors, $message = 'Validation Error', $code = 422)
     {
         return response()->json([
+            'errors' => $errors,
             'status' => 'fail',
             'message' => $message,
-            'errors' => $errors
         ], $code);
     }
 }
