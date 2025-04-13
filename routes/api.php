@@ -23,10 +23,10 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Socialite Routes (Redirect, Callback di Web.php, Register With Google)
 Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle']);
-Route::middleware('auth:sanctum')->post('/set-username', [UserController::class, 'setUsername']);
+Route::middleware('auth:api')->post('/set-username', [UserController::class, 'setUsername']);
 
 // Protected Routes (Perlu Autentikasi)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:api')->group(function () {
     // Authentication
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
@@ -55,7 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Product Routes (Admin dan Kelas)
-    Route::middleware(['auth:sanctum', 'role:admin,kelas'])->group(function () {
+    Route::middleware(['auth:api', 'role:admin,kelas'])->group(function () {
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{id}', [ProductController::class, 'update']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
@@ -82,10 +82,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Chat Routes
-    Route::post('/chat/start', [ChatController::class, 'startChat']); // Pembeli memulai chat
-    Route::get('/chat', [ChatController::class, 'getChats']); // Ambil semua chat berdasarkan peran
-    Route::get('/chat/{chatId}/messages', [ChatController::class, 'getMessages']); // Ambil pesan dalam chat
-    Route::post('/chat/send', [ChatController::class, 'sendMessage']); // Kirim pesan
+    Route::post('/chat/start', [ChatController::class, 'startChat']);
+    Route::get('/chat', [ChatController::class, 'getChats']);
+    Route::get('/chat/{chatId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/chat/send', [ChatController::class, 'sendMessage']);
 
     // Order Routes
     Route::prefix('orders')->group(function () {
@@ -105,23 +105,17 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Route Discount
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/discounts', [DiscountController::class, 'index']);
-        Route::post('/discounts', [DiscountController::class, 'store']);
-        Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
-    
-        Route::post('/products/{id}/apply-discount', [ProductController::class, 'applyDiscount']);
-    });
+    Route::get('/discounts', [DiscountController::class, 'index']);
+    Route::post('/discounts', [DiscountController::class, 'store']);
+    Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
+
+    Route::post('/products/{id}/apply-discount', [ProductController::class, 'applyDiscount']);
 
     // Route Update & Request Price
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/products/{id}/request-price', [ProductController::class, 'requestPrice']); // Penjual request harga
-        Route::post('/price-requests/{id}/approve', [ProductController::class, 'approvePriceRequest']); // Admin menyetujui harga
-    });
+    Route::post('/products/{id}/request-price', [ProductController::class, 'requestPrice']);
+    Route::post('/price-requests/{id}/approve', [ProductController::class, 'approvePriceRequest']);
 
     // Product Routes (Public)
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
-
-    
 });
