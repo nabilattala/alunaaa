@@ -62,10 +62,4 @@ class AuthController extends Controller
             return response()->json(['error' => 'Failed to logout, please try again.'], 500);
         }
     }
-
-    public function user()
-    {
-        $user = auth()->user();
-        return response()->json(['user' => $user]);
-    }
 }
