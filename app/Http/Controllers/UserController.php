@@ -4,31 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Response;
 
 class UserController extends Controller
 {
     // Menampilkan seluruh data pengguna yang aktif
+
+    public function __construct(ApiResponse $apiResponse)
+    {
+        $this->apiResponse = $apiResponse;
+    }
+
     public function index()
     {
+        $user = Auth::user();
         try {
-            // Mengambil semua pengguna yang aktif
-            $activeUsers = User::where('is_active', true)->get();
+            $userInfo = User::where('id', $user->id)->first();
 
-            return response()->json([
-                'message' => 'Active user data retrieved successfully.',
-                'data' => UserResource::collection($activeUsers), // Menggunakan collection untuk multiple users
-            ], Response::HTTP_OK);
-        } catch (\Exception $e) {
-            // Log error jika terjadi kesalahan
-            \Log::error("Error occurred while fetching active user data: " . $e->getMessage());
-
-            return response()->json([
-                'message' => 'An error occurred while fetching active user data.',
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->apiResponse->success(
+                'User data retrieved successfully.',
+                new UserResource($userInfo),
+                Response::HTTP_OK
+            );
+        } catch (Exception $e) {
+            $this->logService->saveErrorLog(
+                "Error occurred while fetching user data",
+                $this->pathController . 'UserController:index',
+                $e
+            );
+            return $this->apiResponse->internalServerError("An error occurred while fetching user data.");
         }
     }
 

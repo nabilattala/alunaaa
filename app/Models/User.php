@@ -22,6 +22,8 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable, HasRoles;
 
+    protected $apiResponse;
+
     protected $fillable = [
         'name',
         'username',
