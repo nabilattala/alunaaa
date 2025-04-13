@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -16,22 +15,34 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LandingPageController;
 
-// Public Routes (tanpa autentikasi)
+// ======================
+// Public Routes
+// ======================
 Route::get('/landing-page', [LandingPageController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Socialite Routes (Redirect, Callback di Web.php, Register With Google)
+// Socialite
 Route::get('auth/google', [SocialiteController::class, 'redirectToGoogle']);
-Route::middleware('auth:api')->post('/set-username', [UserController::class, 'setUsername']);
 
-// Protected Routes (Perlu Autentikasi)
-Route::middleware('auth:api')->group(function () {
-    // Authentication
+// Public Product Routes
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
+
+// ======================
+// Protected Routes (with jwt.verify middleware)
+// ======================
+Route::middleware('jwt.verify')->group(function () {
+
+    // Authenticated User
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::post('/user/update-profile', [UserController::class, 'updateProfile']);
+    Route::post('/set-username', [UserController::class, 'setUsername']);
 
+    // ======================
     // User Management (Admin Only)
+    // ======================
     Route::prefix('users')->middleware('role:admin')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::get('/{id}', [UserController::class, 'show']);
@@ -40,13 +51,13 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
-    // Update Profile Route
-    Route::post('/user/update-profile', [UserController::class, 'updateProfile']);
-
+    // ======================
     // Category Routes
+    // ======================
     Route::prefix('categories')->group(function () {
         Route::get('/', [CategoryController::class, 'index']);
         Route::get('/{id}', [CategoryController::class, 'show']);
+
         Route::middleware('role:admin')->group(function () {
             Route::post('/', [CategoryController::class, 'store']);
             Route::put('/{id}', [CategoryController::class, 'update']);
@@ -54,19 +65,28 @@ Route::middleware('auth:api')->group(function () {
         });
     });
 
-    // Product Routes (Admin dan Kelas)
-    Route::middleware(['auth:api', 'role:admin,kelas'])->group(function () {
+    // ======================
+    // Product Routes (Admin & Kelas)
+    // ======================
+    Route::middleware('role:admin,kelas')->group(function () {
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{id}', [ProductController::class, 'update']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
     });
 
-    // Route khusus admin untuk mengubah harga produk
-    Route::middleware('role:admin')->group(function () {
-        Route::put('{id}/update-price', [ProductController::class, 'updatePrice']);
-    });
+    // Update harga produk (Admin Only)
+    Route::middleware('role:admin')->put('/products/{id}/update-price', [ProductController::class, 'updatePrice']);
 
-    // Cart Routes
+    // Apply Discount ke Produk (Admin Only)
+    Route::middleware('role:admin')->post('/products/{id}/apply-discount', [ProductController::class, 'applyDiscount']);
+
+    // Request & Approve Harga Produk
+    Route::middleware('role:pengguna')->post('/products/{id}/request-price', [ProductController::class, 'requestPrice']);
+    Route::middleware('role:admin')->post('/price-requests/{id}/approve', [ProductController::class, 'approvePriceRequest']);
+
+    // ======================
+    // Cart Routes (Pengguna)
+    // ======================
     Route::prefix('cart')->group(function () {
         Route::get('/', [CartController::class, 'index']);
         Route::post('/', [CartController::class, 'store']);
@@ -74,48 +94,51 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{id}', [CartController::class, 'destroy']);
     });
 
-    // Favorite Routes
+    // ======================
+    // Favorite Routes (Pengguna)
+    // ======================
     Route::prefix('favorites')->group(function () {
         Route::get('/', [FavoriteController::class, 'index']);
         Route::post('/', [FavoriteController::class, 'store']);
         Route::delete('/{id}', [FavoriteController::class, 'destroy']);
     });
 
+    // ======================
     // Chat Routes
+    // ======================
     Route::post('/chat/start', [ChatController::class, 'startChat']);
     Route::get('/chat', [ChatController::class, 'getChats']);
     Route::get('/chat/{chatId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/chat/send', [ChatController::class, 'sendMessage']);
 
+    // ======================
     // Order Routes
+    // ======================
     Route::prefix('orders')->group(function () {
+        // View Order (Admin, Kelas, Pengguna)
         Route::middleware('role:admin,kelas,pengguna')->group(function () {
             Route::get('/', [OrderController::class, 'index']);
             Route::get('/{order}', [OrderController::class, 'show']);
         });
 
-        Route::middleware('role:pengguna')->group(function () {
-            Route::post('/', [OrderController::class, 'store']);
-        });
+        // Create Order (Pengguna Only)
+        Route::middleware('role:pengguna')->post('/', [OrderController::class, 'store']);
 
+        // Update & Delete Order (Admin Only)
         Route::middleware('role:admin')->group(function () {
             Route::put('/{order}/status', [OrderController::class, 'updateStatus']);
             Route::delete('/{order}', [OrderController::class, 'destroy']);
         });
     });
 
-    // Route Discount
+    // ======================
+    // Discount Routes
+    // ======================
     Route::get('/discounts', [DiscountController::class, 'index']);
-    Route::post('/discounts', [DiscountController::class, 'store']);
-    Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
 
-    Route::post('/products/{id}/apply-discount', [ProductController::class, 'applyDiscount']);
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/discounts', [DiscountController::class, 'store']);
+        Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
+    });
 
-    // Route Update & Request Price
-    Route::post('/products/{id}/request-price', [ProductController::class, 'requestPrice']);
-    Route::post('/price-requests/{id}/approve', [ProductController::class, 'approvePriceRequest']);
-
-    // Product Routes (Public)
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
 });
