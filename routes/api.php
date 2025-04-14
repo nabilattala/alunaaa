@@ -40,11 +40,16 @@ Route::middleware('jwt.verify')->group(function () {
     Route::post('/user/update-profile', [UserController::class, 'updateProfile']);
     Route::post('/set-username', [UserController::class, 'setUsername']);
 
+    // Tambahan: 
+    // Route untuk get semua users (dengan pagination)
+    Route::get('/users', [UserController::class, 'index']); // untuk semua authenticated user
+    // Route untuk get current authenticated user info
+    Route::get('/current-user', [UserController::class, 'currentUser']); // untuk current user
+
     // ======================
     // User Management (Admin Only)
     // ======================
     Route::prefix('users')->middleware('role:admin')->group(function () {
-        Route::get('/', [UserController::class, 'index']);
         Route::get('/{id}', [UserController::class, 'show']);
         Route::post('/', [UserController::class, 'store']);
         Route::put('/{id}', [UserController::class, 'update']);
