@@ -21,14 +21,33 @@ class UserController extends Controller
         $this->apiResponse = $apiResponse;
     }
 
-    public function index()
+    // Get all users with pagination
+    public function index(Request $request)
+    {
+        try {
+            $perPage = $request->query('per_page', 10); // Default to 10 users per page
+            $users = User::paginate($perPage);
+            return $this->apiResponse->success(
+                UserResource::collection($users),
+                'All users retrieved successfully.',
+                Response::HTTP_OK
+            );
+        } catch (Exception $e) {
+            return $this->apiResponse->error(
+                "An error occurred while fetching users data.",
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    // Get the current authenticated user
+    public function currentUser()
     {
         $user = Auth::user();
         try {
-            $userInfo = User::where('id', $user->id)->first();
             return $this->apiResponse->success(
-                new UserResource($userInfo),
-                'User data retrieved successfully.',
+                new UserResource($user),
+                'Current user data retrieved successfully.',
                 Response::HTTP_OK
             );
         } catch (Exception $e) {
@@ -39,6 +58,7 @@ class UserController extends Controller
         }
     }
 
+    // Get a specific user by ID
     public function show($id)
     {
         $user = User::find($id);
@@ -48,6 +68,7 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    // Store a new user
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -84,6 +105,7 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    // Update a specific user
     public function update(Request $request, $id)
     {
         $user = User::find($id);
@@ -115,7 +137,7 @@ class UserController extends Controller
             $profilePhotoName = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/profile_photos'), $profilePhotoName);
 
-            // Hapus foto lama
+            // Delete old profile photo
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
                 unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
             }
@@ -128,6 +150,7 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    // Delete a specific user
     public function destroy($id)
     {
         $user = User::find($id);
@@ -135,7 +158,7 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Hapus foto profile jika ada
+        // Delete profile photo if exists
         if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
             unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
         }
@@ -144,6 +167,7 @@ class UserController extends Controller
         return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
 
+    // Update user profile (address, phone number, profile photo)
     public function updateProfile(Request $request)
     {
         $request->validate([
@@ -167,7 +191,7 @@ class UserController extends Controller
             $fileName = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/profile_photos'), $fileName);
 
-            // Hapus foto lama
+            // Delete old photo
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
                 unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
             }
@@ -180,6 +204,7 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    // Update username of current user
     public function setUsername(Request $request)
     {
         $user = auth()->user();
@@ -193,7 +218,7 @@ class UserController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Username berhasil disimpan',
+            'message' => 'Username successfully updated',
             'user' => $user,
         ]);
     }
