@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class SocialiteController extends Controller
 {
@@ -31,7 +34,7 @@ class SocialiteController extends Controller
             $firstLogin = !$user->username;
 
             // Generate Sanctum Token untuk API
-            $token = $user->createToken('google-auth-token')->plainTextToken;
+            $token = $this->generateAuthToken($user);
 
             return response()->json([
                 'message' => 'Login berhasil',
@@ -39,8 +42,26 @@ class SocialiteController extends Controller
                 'token' => $token,
                 'first_login' => $firstLogin
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::error('Error occured while handling google login callback: ' . $e->getMessage(), [
+                'trace' => $e->getTrace()
+            ]);
             return response()->json(['error' => 'Gagal login'], 500);
+        }
+    }
+
+    private function generateAuthToken($user)
+    {
+        try {
+            $accessToken = JWTAuth::fromUser($user);
+
+            return $accessToken;
+        } catch (Exception $e) {
+            Log::error('Error occured: ' . $e->getMessage(), [
+                'trace' => $e->getTrace()
+            ]);
+
+            throw $e;
         }
     }
 
