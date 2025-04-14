@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -39,33 +40,41 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        if (!$token = auth('api')->attempt($credentials)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $user = auth()->user();
+        // Set user is_active = 1 saat login
+        $user = auth('api')->user();
+        $user->is_active = 1;
+        $user->save();
 
         return response()->json([
-            'message' => 'Login successful',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-        ]);
+            'status' => 'success',
+            'token' => $token,
+            'user' => new UserResource($user)
+        ], 200);
     }
+
 
     public function logout()
     {
-        try {
-            JWTAuth::invalidate(JWTAuth::getToken());
-            return response()->json(['message' => 'Logout successful']);
-        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
-            return response()->json(['error' => 'Failed to logout, please try again.'], 500);
+        // Set user is_active = 0 saat logout
+        $user = auth('api')->user();
+        if ($user) {
+            $user->is_active = 0;
+            $user->save();
         }
+
+        auth('api')->logout();
+
+        return response()->json(['message' => 'Successfully logged out']);
     }
+
 
     public function user()
     {
-        $user = auth()->user();
+        $user = auth('api')->user();
         return response()->json(['user' => $user]);
     }
 }

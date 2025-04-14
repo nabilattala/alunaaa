@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('phone_number')->nullable(); // Tambah kolom no telepon
             $table->string('profile_photo')->nullable();
             $table->enum('role', ['admin', 'kelas', 'pengguna'])->default('pengguna');
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });
