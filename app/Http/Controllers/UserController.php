@@ -10,10 +10,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Response;
+use Exception;
 
 class UserController extends Controller
 {
-    // Menampilkan seluruh data pengguna yang aktif
+    protected $apiResponse;
 
     public function __construct(ApiResponse $apiResponse)
     {
@@ -25,142 +26,156 @@ class UserController extends Controller
         $user = Auth::user();
         try {
             $userInfo = User::where('id', $user->id)->first();
-
             return $this->apiResponse->success(
-                'User data retrieved successfully.',
                 new UserResource($userInfo),
+                'User data retrieved successfully.',
                 Response::HTTP_OK
             );
         } catch (Exception $e) {
-            $this->logService->saveErrorLog(
-                "Error occurred while fetching user data",
-                $this->pathController . 'UserController:index',
-                $e
+            return $this->apiResponse->error(
+                "An error occurred while fetching user data.",
+                Response::HTTP_INTERNAL_SERVER_ERROR
             );
-            return $this->apiResponse->internalServerError("An error occurred while fetching user data.");
         }
     }
 
-    // Menampilkan data pengguna berdasarkan ID
     public function show($id)
     {
-        // Mencari pengguna berdasarkan ID
         $user = User::find($id);
-
-        // Jika pengguna tidak ditemukan, mengembalikan respon error
         if (!$user) {
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
-
-        // Mengembalikan data pengguna yang ditemukan dalam bentuk resource
         return new UserResource($user);
     }
 
-    // Menyimpan data pengguna baru
     public function store(Request $request)
     {
-        // Validasi input yang diterima
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',  // Nama pengguna wajib diisi
-            'email' => 'required|string|email|max:255|unique:users',  // Email wajib unik
-            'password' => 'required|string|min:8',  // Password minimal 8 karakter
-            'role' => 'required|in:admin,kelas,pengguna',  // Role harus salah satu dari admin, kelas, atau pengguna
-            'is_active' => 'boolean',  // Kolom is_active opsional, default true
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+            'role' => 'required|in:admin,kelas,pengguna',
+            'phone_number' => 'nullable|string|max:20',
+            'is_active' => 'boolean',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // Jika validasi gagal, mengembalikan error
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Membuat pengguna baru
+        $profilePhotoName = null;
+        if ($request->hasFile('profile_photo')) {
+            $file = $request->file('profile_photo');
+            $profilePhotoName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/profile_photos'), $profilePhotoName);
+        }
+
         $user = User::create([
-            'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
-            'password' => Hash::make($request->password),  // Password harus dienkripsi
-            'role' => $request->role,  // Menetapkan role pengguna
-            'is_active' => $request->is_active ?? true,  // Default is_active true jika tidak diisi
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'phone_number' => $request->phone_number,
+            'is_active' => $request->is_active ?? true,
+            'profile_photo' => $profilePhotoName,
         ]);
 
-        // Mengembalikan data pengguna yang baru dibuat sebagai resource
         return new UserResource($user);
     }
 
-    // Mengupdate data pengguna berdasarkan ID
     public function update(Request $request, $id)
     {
-        // Mencari pengguna berdasarkan ID
         $user = User::find($id);
-
-        // Jika pengguna tidak ditemukan, mengembalikan respon error
         if (!$user) {
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Validasi input yang diterima
         $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|string|max:255',
+            'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'sometimes|string|min:8',
             'role' => 'sometimes|in:admin,kelas,pengguna',
+            'phone_number' => 'nullable|string|max:20',
             'is_active' => 'sometimes|boolean',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // Jika validasi gagal, mengembalikan error
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Mengupdate data pengguna dengan data yang diterima dari request
         if ($request->has('password')) {
             $request->merge(['password' => Hash::make($request->password)]);
         }
-        $user->update($request->all());
 
-        // Mengembalikan data pengguna yang telah diperbarui sebagai resource
+        // Handle profile photo
+        if ($request->hasFile('profile_photo')) {
+            $file = $request->file('profile_photo');
+            $profilePhotoName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/profile_photos'), $profilePhotoName);
+
+            // Hapus foto lama
+            if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
+                unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
+            }
+
+            $user->profile_photo = $profilePhotoName;
+        }
+
+        $user->update($request->except('profile_photo'));
+
         return new UserResource($user);
     }
 
-    // Menghapus pengguna berdasarkan ID
     public function destroy($id)
     {
-        // Mencari pengguna berdasarkan ID
         $user = User::find($id);
-
-        // Jika pengguna tidak ditemukan, mengembalikan respon error
         if (!$user) {
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Menghapus pengguna
-        $user->delete();
+        // Hapus foto profile jika ada
+        if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
+            unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
+        }
 
-        // Mengembalikan respon bahwa pengguna telah berhasil dihapus
+        $user->delete();
         return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
 
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'address' => 'nullable|string',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        $request->validate([
+            'address' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        $user = auth()->user();
+
+        if ($request->has('address')) {
+            $user->address = $request->address;
+        }
+
+        if ($request->has('phone_number')) {
+            $user->phone_number = $request->phone_number;
         }
 
         if ($request->hasFile('profile_photo')) {
-            $file = $request->file('profilephoto');
-            $filename = time() . '' . $file->getClientOriginalName();
-            $file->storeAs('uploads/profile', $filename, 'public');
-            $user->profile_photo = 'storage/uploads/profile/' . $filename;
+            $file = $request->file('profile_photo');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/profile_photos'), $fileName);
+
+            // Hapus foto lama
+            if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
+                unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
+            }
+
+            $user->profile_photo = $fileName;
         }
 
-        $user->update($request->except('profile_photo'));
+        $user->save();
 
         return new UserResource($user);
     }
@@ -170,7 +185,7 @@ class UserController extends Controller
         $user = auth()->user();
 
         $request->validate([
-            'username' => 'required|string|max:255|unique:users,username',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
         ]);
 
         $user->update([
@@ -183,4 +198,3 @@ class UserController extends Controller
         ]);
     }
 }
-
