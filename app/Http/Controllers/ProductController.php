@@ -13,12 +13,14 @@ use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
-
     public function index()
     {
-        $products = Product::with(['discounts' => function ($query) {
-            $query->whereDate('expires_at', '>=', now()); // Hanya ambil diskon yang masih berlaku
-        }])->get();
+        $products = Product::with([
+            'discounts' => function ($query) {
+                $query->whereDate('expires_at', '>=', now()); // Hanya ambil diskon yang masih berlaku
+            },
+            'ratings' // Eager load ratings untuk menghitung rata-rata
+        ])->get();
 
         return response()->json([
             'products' => $products->map(function ($product) {
@@ -37,14 +39,16 @@ class ProductController extends Controller
                     'final_price' => $product->discounts->isNotEmpty()
                         ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                         : $product->price,
+                    'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null, // Perhitungan rata-rata rating
                 ];
             })
         ]);
     }
 
+
     public function show($id)
     {
-        $product = Product::with(['category', 'discounts'])->find($id);
+        $product = Product::with(['category', 'discounts', 'ratings'])->find($id);
 
         if (!$product) {
             return response()->json([
@@ -58,7 +62,6 @@ class ProductController extends Controller
             'data' => $product
         ]);
     }
-
 
     public function store(Request $request)
     {
@@ -214,7 +217,7 @@ class ProductController extends Controller
         }
 
         $discountedPrice = $product->price - ($product->price * ($discount->percentage / 100));
-        
+
         return response()->json([
             'original_price' => $product->price,
             'discount_percentage' => $discount->percentage,

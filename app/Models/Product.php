@@ -90,4 +90,14 @@ class Product extends Model
             $q->where('status', $status);
         });
     }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    public function averageRating()
+    {
+        return $this->ratings()->avg('rating');
+    }
 }

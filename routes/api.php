@@ -14,6 +14,8 @@ use App\Http\Controllers\BannerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\RatingController;
 
 // ======================
 // Public Routes
@@ -145,5 +147,14 @@ Route::middleware('jwt.verify')->group(function () {
         Route::post('/discounts', [DiscountController::class, 'store']);
         Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
     });
+
+    // ======================
+    // Rating Routes
+    // ======================
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/products/{product}/ratings', [RatingController::class, 'store']);
+    });
+    
+    Route::get('/products/{product}/ratings', [RatingController::class, 'index']);
 
 });
