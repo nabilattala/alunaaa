@@ -88,11 +88,12 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $profilePhotoName = null;
+        $profilePhotoUrl = null;
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $profilePhotoName = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/profile_photos'), $profilePhotoName);
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/profile_photos'), $fileName);
+            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
         }
 
         $user = User::create([
@@ -102,7 +103,7 @@ class UserController extends Controller
             'role' => $request->role,
             'phone_number' => $request->phone_number,
             'is_active' => $request->is_active ?? true,
-            'profile_photo' => $profilePhotoName,
+            'profile_photo' => $profilePhotoUrl,
         ]);
 
         return new UserResource($user);
@@ -134,18 +135,19 @@ class UserController extends Controller
             $request->merge(['password' => Hash::make($request->password)]);
         }
 
-        // Handle profile photo
+        // Handle profile photo URL
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $profilePhotoName = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/profile_photos'), $profilePhotoName);
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/profile_photos'), $fileName);
+            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
 
-            // Delete old profile photo
+            // Delete old profile photo if exists
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
                 unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
             }
 
-            $user->profile_photo = $profilePhotoName;
+            $user->profile_photo = $profilePhotoUrl;
         }
 
         $user->update($request->except('profile_photo'));
@@ -193,13 +195,14 @@ class UserController extends Controller
             $file = $request->file('profile_photo');
             $fileName = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/profile_photos'), $fileName);
+            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
 
             // Delete old photo
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
                 unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
             }
 
-            $user->profile_photo = $fileName;
+            $user->profile_photo = $profilePhotoUrl;
         }
 
         $user->save();
@@ -272,7 +275,7 @@ class UserController extends Controller
 
         // OTP valid — lanjut reset password
         return response()->json([
-            'message' => 'OTP verified successfully.'
+            'message' => 'OTP verified successfully. You can now reset your password.'
         ], Response::HTTP_OK);
     }
 
