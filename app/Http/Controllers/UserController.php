@@ -72,6 +72,7 @@ class UserController extends Controller
     }
 
     // Store a new user
+    // Store a new user
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -91,9 +92,10 @@ class UserController extends Controller
         $profilePhotoUrl = null;
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '.' . $extension;
             $file->move(public_path('uploads/profile_photos'), $fileName);
-            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
+            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName); // Generate URL
         }
 
         $user = User::create([
@@ -103,18 +105,21 @@ class UserController extends Controller
             'role' => $request->role,
             'phone_number' => $request->phone_number,
             'is_active' => $request->is_active ?? true,
-            'profile_photo' => $profilePhotoUrl,
+            'profile_photo' => $profilePhotoUrl, // Store URL
         ]);
 
         return new UserResource($user);
     }
 
+
+    // Update a specific user
+    // Update a specific user
     // Update a specific user
     public function update(Request $request, $id)
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => 'User  not found'], Response::HTTP_NOT_FOUND);
         }
 
         $validator = Validator::make($request->all(), [
@@ -135,19 +140,19 @@ class UserController extends Controller
             $request->merge(['password' => Hash::make($request->password)]);
         }
 
-        // Handle profile photo URL
+        // Handle new profile photo
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '.' . $extension;
             $file->move(public_path('uploads/profile_photos'), $fileName);
-            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
 
-            // Delete old profile photo if exists
-            if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
-                unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
+            // Delete old photo
+            if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
+                unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
             }
 
-            $user->profile_photo = $profilePhotoUrl;
+            $user->profile_photo = url('uploads/profile_photos/' . $fileName); // Store URL
         }
 
         $user->update($request->except('profile_photo'));
@@ -163,12 +168,12 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Delete profile photo if exists
         if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
             unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
         }
 
         $user->delete();
+
         return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
 
@@ -193,16 +198,16 @@ class UserController extends Controller
 
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '.' . $extension;
             $file->move(public_path('uploads/profile_photos'), $fileName);
-            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
 
             // Delete old photo
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
                 unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
             }
 
-            $user->profile_photo = $profilePhotoUrl;
+            $user->profile_photo = $fileName;
         }
 
         $user->save();
