@@ -6,25 +6,32 @@ use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Mail\OrderInvoice;
 use Midtrans\Snap;
 use Midtrans\Config;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
     public function checkout(Request $request)
     {
         $user = auth()->user();
-        
+
+        // Cek checkout dari keranjang atau langsung
         if ($request->has('cart')) {
             $cartItems = Cart::where('user_id', $user->id)->get();
             if ($cartItems->isEmpty()) {
                 return response()->json(['message' => 'Cart is empty'], 400);
             }
-            
+
             $order = Order::create([
                 'user_id' => $user->id,
+                'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                 'total_price' => $cartItems->sum(fn($item) => $item->product->price * $item->quantity),
                 'status' => 'pending',
+                'payment_status' => 'unpaid'
             ]);
 
             foreach ($cartItems as $item) {
@@ -35,21 +42,24 @@ class OrderController extends Controller
                     'price' => $item->product->price,
                 ]);
             }
-            
+
+            // Hapus keranjang setelah checkout
             Cart::where('user_id', $user->id)->delete();
         } else {
             $request->validate([
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1',
             ]);
-            
+
             $product = Product::findOrFail($request->product_id);
             $order = Order::create([
                 'user_id' => $user->id,
+                'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                 'total_price' => $product->price * $request->quantity,
                 'status' => 'pending',
+                'payment_status' => 'unpaid'
             ]);
-            
+
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $product->id,
@@ -57,7 +67,8 @@ class OrderController extends Controller
                 'price' => $product->price,
             ]);
         }
-        
+
+        // Konfigurasi Midtrans
         Config::$serverKey = env('MIDTRANS_SERVER_KEY');
         Config::$isProduction = false;
         Config::$isSanitized = true;
@@ -65,7 +76,7 @@ class OrderController extends Controller
 
         $transaction = [
             'transaction_details' => [
-                'order_id' => $order->id,
+                'order_id' => $order->invoice_number,
                 'gross_amount' => $order->total_price,
             ],
             'customer_details' => [
@@ -75,6 +86,17 @@ class OrderController extends Controller
         ];
 
         $snapToken = Snap::getSnapToken($transaction);
-        return response()->json(['snap_token' => $snapToken]);
+
+        // Simpan payment_url (kalau kamu mau pakai)
+        $order->payment_url = "https://app.sandbox.midtrans.com/snap/v2/vtweb/" . $snapToken;
+        $order->save();
+
+        // Kirim invoice via email
+        Mail::to($user->email)->send(new OrderInvoice($order));
+
+        return response()->json([
+            'snap_token' => $snapToken,
+            'message' => 'Order created and invoice sent!'
+        ]);
     }
 }

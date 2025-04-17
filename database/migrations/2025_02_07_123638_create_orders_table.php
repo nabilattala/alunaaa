@@ -10,8 +10,7 @@ return new class extends Migration {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->string('order_id')->unique();
+            $table->string('invoice_number')->unique();
             $table->integer('total_price');
             $table->enum('status', ['completed', 'pending', 'cancelled'])->default('pending');
             $table->enum('payment_status', ['paid', 'unpaid', 'expired'])->default('unpaid');

@@ -16,6 +16,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RatingController;
+use App\Http\Controllers\OrderExportController;
 
 // ======================
 // Public Routes
@@ -163,6 +164,11 @@ Route::middleware('jwt.verify')->group(function () {
     Route::post('/forgot-password', [UserController::class, 'sendOtpForgotPassword']);
     Route::post('/verify-otp', [UserController::class, 'verifyOtp']);
     Route::post('/reset-password', [UserController::class, 'resetPassword']);
+
+    // ======================
+    // Export to excel Routes
+    // ======================
+    Route::get('/export/orders', [OrderExportController::class, 'export']);
 
 
 });

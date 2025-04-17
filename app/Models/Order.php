@@ -49,4 +49,10 @@ class Order extends Model
     {
         $this->attributes['status'] = strtolower($value);
     }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
 }
