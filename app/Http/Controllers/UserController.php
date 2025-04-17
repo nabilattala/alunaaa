@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Exception;
 
 class UserController extends Controller
@@ -222,4 +225,85 @@ class UserController extends Controller
             'user' => $user,
         ]);
     }
+
+    public function sendOtpForgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Generate 6 digit random OTP
+        $otp = rand(100000, 999999);
+
+        // Simpan ke database
+        $user->otp_code = $otp;
+        $user->otp_expires_at = Carbon::now()->addMinutes(10);
+        $user->save();
+
+        // Kirim email (pakai Mail)
+        Mail::raw("Your OTP code is: {$otp}", function ($message) use ($user) {
+            $message->to($user->email)
+                    ->subject('Forgot Password OTP Code');
+        });
+
+        return response()->json([
+            'message' => 'OTP has been sent to your email.'
+        ], Response::HTTP_OK);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp_code' => 'required|digits:6',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || $user->otp_code !== $request->otp_code) {
+            return response()->json(['message' => 'Invalid OTP code.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (Carbon::now()->gt($user->otp_expires_at)) {
+            return response()->json(['message' => 'OTP code has expired.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // OTP valid — lanjut reset password
+        return response()->json([
+            'message' => 'OTP verified successfully.'
+        ], Response::HTTP_OK);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp_code' => 'required|digits:6',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || $user->otp_code !== $request->otp_code) {
+            return response()->json(['message' => 'Invalid OTP code.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (Carbon::now()->gt($user->otp_expires_at)) {
+            return response()->json(['message' => 'OTP code has expired.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password has been reset successfully.'
+        ], Response::HTTP_OK);
+    }
+
+
 }

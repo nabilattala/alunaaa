@@ -157,4 +157,12 @@ Route::middleware('jwt.verify')->group(function () {
     
     Route::get('/products/{product}/ratings', [RatingController::class, 'index']);
 
+    // ======================
+    // OTP Routes
+    // ======================
+    Route::post('/forgot-password', [UserController::class, 'sendOtpForgotPassword']);
+    Route::post('/verify-otp', [UserController::class, 'verifyOtp']);
+    Route::post('/reset-password', [UserController::class, 'resetPassword']);
+
+
 });
