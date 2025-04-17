@@ -15,8 +15,11 @@ return new class extends Migration {
             $table->enum('status', ['completed', 'pending', 'cancelled'])->default('pending');
             $table->enum('payment_status', ['paid', 'unpaid', 'expired'])->default('unpaid');
             $table->string('payment_url')->nullable();
+            $table->json('midtrans_response')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
+        
     }
 
     public function down(): void

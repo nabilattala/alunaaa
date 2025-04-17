@@ -170,5 +170,11 @@ Route::middleware('jwt.verify')->group(function () {
     // ======================
     Route::get('/export/orders', [OrderExportController::class, 'export']);
 
+    // ======================
+    // Dashboard Routes
+    // ======================
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+
 
 });

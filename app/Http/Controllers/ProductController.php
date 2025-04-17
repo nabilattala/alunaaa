@@ -40,6 +40,8 @@ class ProductController extends Controller
                         ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                         : $product->price,
                     'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null, // Perhitungan rata-rata rating
+                    'created_at' => $product->created_at->format('d-m-Y H:i'),
+                    'updated_at' => $product->updated_at->format('d-m-Y H:i'),
                 ];
             })
         ]);
