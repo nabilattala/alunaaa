@@ -31,8 +31,11 @@ class ProductController extends Controller
                     'title' => $product->title,
                     'description' => $product->description,
                     'price' => $product->price,
-                    'user_id' => $product->user_id,
-                    'creator_name' => $product->user->username ?? null,
+                    'user' => [
+                        'id' => $product->user_id,                          // ID user
+                        'username' => $product->user->username ?? null,     // Username user
+                    ],                          // Tambah user_id
+                    'creator_name' => $product->user->username ?? null,      // Nama pembuat
                     'category' => [
                         'id' => $product->category->id ?? null,
                         'name' => $product->category->name ?? null,
