@@ -31,12 +31,13 @@ class ProductController extends Controller
                     'title' => $product->title,
                     'description' => $product->description,
                     'price' => $product->price,
-                    'user_id' => $product->user_id,                          // Tambah user_id
-                    'creator_name' => $product->user->username ?? null,      // Nama pembuat
+                    'user_id' => $product->user_id,
+                    'creator_name' => $product->user->username ?? null,
                     'category' => [
-                        'id' => $product->category->id ?? null,              // ID kategori
-                        'name' => $product->category->name ?? null,          // Nama kategori
+                        'id' => $product->category->id ?? null,
+                        'name' => $product->category->name ?? null,
                     ],
+                    'image_url' => $product->image ? Storage::url($product->image) : null, // <= ini ditambahkan
                     'discounts' => $product->discounts->map(function ($discount) {
                         return [
                             'code' => $discount->code,

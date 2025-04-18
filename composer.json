@@ -18,8 +18,8 @@
         "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {
+        "beyondcode/laravel-er-diagram-generator": "^4.0",
         "fakerphp/faker": "^1.9.1",
-        "kevincobain2000/laravel-erd": "^1.7",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
         "mockery/mockery": "^1.4.4",
