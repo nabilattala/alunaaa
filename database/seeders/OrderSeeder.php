@@ -25,6 +25,8 @@ class OrderSeeder extends Seeder
             'status' => 'pending',
             'invoice_number' => '10000',
             'total_price' => 50000,
+            'payment_url' => null,
+            'midtrans_response' => null,
         ]);
 
         Order::create([
@@ -33,7 +35,10 @@ class OrderSeeder extends Seeder
             'user_id' => $users[1]->id,
             'invoice_number' => '10001',
             'status' => 'completed',
+            'payment_status' => 'paid',
             'total_price' => 75000,
+            'payment_url' => 'https://example.com/payment/INV-002',
+            'midtrans_response' => json_encode(['transaction_status' => 'settlement']),
         ]);
     }
 }
