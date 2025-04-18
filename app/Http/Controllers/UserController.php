@@ -76,6 +76,9 @@ class UserController extends Controller
             'role' => 'required|in:admin,kelas,pengguna',
             'phone_number' => 'nullable|string|max:20',
             'is_active' => 'boolean',
+            'address' => 'nullable|string|max:500',
+            'otp_code' => 'nullable|digits:6',
+            'otp_expires_at' => 'nullable|date',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
@@ -97,6 +100,11 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'phone_number' => $request->phone_number,
+            'address' => $request->address,
+            'otp_code' => $request->otp_code,
+            'otp_expires_at' => $request->otp_expires_at,
+            'created_at' => now(),
+            'updated_at' => now(),
             'is_active' => $request->is_active ?? true,
             'profile_photo' => $profilePhotoUrl,
         ]);
@@ -117,36 +125,34 @@ class UserController extends Controller
             'password' => 'sometimes|string|min:8',
             'role' => 'sometimes|in:admin,kelas,pengguna',
             'phone_number' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'otp_code' => 'nullable|digits:6',
+            'otp_expires_at' => 'nullable|date',
             'is_active' => 'sometimes|boolean',
-            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'profile_photo' => 'nullable|file|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if ($request->has('username')) {
-            $user->username = $request->username;
+        $data = $request->only([
+            'username',
+            'email',
+            'role',
+            'phone_number',
+            'address',
+            'otp_code',
+            'otp_expires_at',
+            'is_active'
+        ]);
+
+        foreach ($data as $key => $value) {
+            $user->{$key} = $value;
         }
 
-        if ($request->has('email')) {
-            $user->email = $request->email;
-        }
-
-        if ($request->has('password')) {
+        if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
-        }
-
-        if ($request->has('role')) {
-            $user->role = $request->role;
-        }
-
-        if ($request->has('phone_number')) {
-            $user->phone_number = $request->phone_number;
-        }
-
-        if ($request->has('is_active')) {
-            $user->is_active = $request->is_active;
         }
 
         if ($request->hasFile('profile_photo')) {
@@ -154,8 +160,9 @@ class UserController extends Controller
             $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/profile_photos'), $fileName);
 
+            // Delete old photo if exists
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
-                unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
+                @unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
             }
 
             $user->profile_photo = url('uploads/profile_photos/' . $fileName);
@@ -165,6 +172,7 @@ class UserController extends Controller
 
         return new UserResource($user);
     }
+
 
     public function destroy($id)
     {
@@ -249,7 +257,7 @@ class UserController extends Controller
 
         Mail::raw("Your OTP code is: {$otp}", function ($message) use ($user) {
             $message->to($user->email)
-                    ->subject('Forgot Password OTP Code');
+                ->subject('Forgot Password OTP Code');
         });
 
         return response()->json(['message' => 'OTP has been sent to your email.'], Response::HTTP_OK);
