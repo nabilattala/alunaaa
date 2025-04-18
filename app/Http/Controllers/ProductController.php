@@ -17,9 +17,11 @@ class ProductController extends Controller
     {
         $products = Product::with([
             'discounts' => function ($query) {
-                $query->whereDate('expires_at', '>=', now()); // Hanya ambil diskon yang masih berlaku
+                $query->whereDate('expires_at', '>=', now());
             },
-            'ratings' // Eager load ratings untuk menghitung rata-rata
+            'ratings',
+            'category', // load category
+            'user'      // load user
         ])->get();
 
         return response()->json([
@@ -29,6 +31,12 @@ class ProductController extends Controller
                     'title' => $product->title,
                     'description' => $product->description,
                     'price' => $product->price,
+                    'user_id' => $product->user_id,                          // Tambah user_id
+                    'creator_name' => $product->user->username ?? null,      // Nama pembuat
+                    'category' => [
+                        'id' => $product->category->id ?? null,              // ID kategori
+                        'name' => $product->category->name ?? null,          // Nama kategori
+                    ],
                     'discounts' => $product->discounts->map(function ($discount) {
                         return [
                             'code' => $discount->code,
@@ -39,7 +47,7 @@ class ProductController extends Controller
                     'final_price' => $product->discounts->isNotEmpty()
                         ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                         : $product->price,
-                    'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null, // Perhitungan rata-rata rating
+                    'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
                     'created_at' => $product->created_at->format('d-m-Y H:i'),
                     'updated_at' => $product->updated_at->format('d-m-Y H:i'),
                 ];
@@ -48,9 +56,10 @@ class ProductController extends Controller
     }
 
 
+
     public function show($id)
     {
-        $product = Product::with(['category', 'discounts', 'ratings'])->find($id);
+        $product = Product::with(['category', 'discounts', 'ratings', 'user'])->find($id);
 
         if (!$product) {
             return response()->json([
@@ -61,9 +70,31 @@ class ProductController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $product
+            'data' => [
+                'id' => $product->id,
+                'title' => $product->title,
+                'description' => $product->description,
+                'price' => $product->price,
+                'user_id' => $product->user_id,
+                'creator_name' => $product->user->username ?? null,
+                'category' => [
+                    'id' => $product->category->id ?? null,
+                    'name' => $product->category->name ?? null,
+                ],
+                'discounts' => $product->discounts->map(function ($discount) {
+                    return [
+                        'code' => $discount->code,
+                        'percentage' => $discount->percentage,
+                        'expires_at' => $discount->expires_at,
+                    ];
+                }),
+                'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
+                'created_at' => $product->created_at->format('d-m-Y H:i'),
+                'updated_at' => $product->updated_at->format('d-m-Y H:i'),
+            ]
         ]);
     }
+
 
     public function store(Request $request)
     {
