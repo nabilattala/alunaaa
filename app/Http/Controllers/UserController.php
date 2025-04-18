@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Exception;
 
@@ -24,11 +23,10 @@ class UserController extends Controller
         $this->apiResponse = $apiResponse;
     }
 
-    // Get all users with pagination
     public function index(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 10); // Default to 10 users per page
+            $perPage = $request->query('per_page', 10);
             $users = User::paginate($perPage);
             return $this->apiResponse->success(
                 UserResource::collection($users),
@@ -43,7 +41,6 @@ class UserController extends Controller
         }
     }
 
-    // Get the current authenticated user
     public function currentUser()
     {
         $user = Auth::user();
@@ -61,7 +58,6 @@ class UserController extends Controller
         }
     }
 
-    // Get a specific user by ID
     public function show($id)
     {
         $user = User::find($id);
@@ -71,8 +67,6 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
-    // Store a new user
-    // Store a new user
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -92,10 +86,9 @@ class UserController extends Controller
         $profilePhotoUrl = null;
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '.' . $extension;
+            $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/profile_photos'), $fileName);
-            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName); // Generate URL
+            $profilePhotoUrl = url('uploads/profile_photos/' . $fileName);
         }
 
         $user = User::create([
@@ -105,21 +98,17 @@ class UserController extends Controller
             'role' => $request->role,
             'phone_number' => $request->phone_number,
             'is_active' => $request->is_active ?? true,
-            'profile_photo' => $profilePhotoUrl, // Store URL
+            'profile_photo' => $profilePhotoUrl,
         ]);
 
         return new UserResource($user);
     }
 
-
-    // Update a specific user
-    // Update a specific user
-    // Update a specific user
     public function update(Request $request, $id)
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User  not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
         $validator = Validator::make($request->all(), [
@@ -136,31 +125,47 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if ($request->has('password')) {
-            $request->merge(['password' => Hash::make($request->password)]);
+        if ($request->has('username')) {
+            $user->username = $request->username;
         }
 
-        // Handle new profile photo
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+
+        if ($request->has('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        if ($request->has('role')) {
+            $user->role = $request->role;
+        }
+
+        if ($request->has('phone_number')) {
+            $user->phone_number = $request->phone_number;
+        }
+
+        if ($request->has('is_active')) {
+            $user->is_active = $request->is_active;
+        }
+
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '.' . $extension;
+            $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/profile_photos'), $fileName);
 
-            // Delete old photo
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
                 unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
             }
 
-            $user->profile_photo = url('uploads/profile_photos/' . $fileName); // Store URL
+            $user->profile_photo = url('uploads/profile_photos/' . $fileName);
         }
 
-        $user->update($request->except('profile_photo'));
+        $user->save();
 
         return new UserResource($user);
     }
 
-    // Delete a specific user
     public function destroy($id)
     {
         $user = User::find($id);
@@ -168,8 +173,8 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
-            unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
+        if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
+            unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
         }
 
         $user->delete();
@@ -177,7 +182,6 @@ class UserController extends Controller
         return response()->json(['message' => 'User deleted successfully'], Response::HTTP_OK);
     }
 
-    // Update user profile (address, phone number, profile photo)
     public function updateProfile(Request $request)
     {
         $request->validate([
@@ -198,16 +202,14 @@ class UserController extends Controller
 
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '.' . $extension;
+            $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/profile_photos'), $fileName);
 
-            // Delete old photo
-            if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . $user->profile_photo))) {
-                unlink(public_path('uploads/profile_photos/' . $user->profile_photo));
+            if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
+                unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
             }
 
-            $user->profile_photo = $fileName;
+            $user->profile_photo = url('uploads/profile_photos/' . $fileName);
         }
 
         $user->save();
@@ -215,7 +217,6 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
-    // Update username of current user
     public function setUsername(Request $request)
     {
         $user = auth()->user();
@@ -224,9 +225,8 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
         ]);
 
-        $user->update([
-            'username' => $request->username,
-        ]);
+        $user->username = $request->username;
+        $user->save();
 
         return response()->json([
             'message' => 'Username successfully updated',
@@ -242,23 +242,17 @@ class UserController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // Generate 6 digit random OTP
         $otp = rand(100000, 999999);
-
-        // Simpan ke database
         $user->otp_code = $otp;
         $user->otp_expires_at = Carbon::now()->addMinutes(10);
         $user->save();
 
-        // Kirim email (pakai Mail)
         Mail::raw("Your OTP code is: {$otp}", function ($message) use ($user) {
             $message->to($user->email)
                     ->subject('Forgot Password OTP Code');
         });
 
-        return response()->json([
-            'message' => 'OTP has been sent to your email.'
-        ], Response::HTTP_OK);
+        return response()->json(['message' => 'OTP has been sent to your email.'], Response::HTTP_OK);
     }
 
     public function verifyOtp(Request $request)
@@ -278,10 +272,7 @@ class UserController extends Controller
             return response()->json(['message' => 'OTP code has expired.'], Response::HTTP_BAD_REQUEST);
         }
 
-        // OTP valid — lanjut reset password
-        return response()->json([
-            'message' => 'OTP verified successfully. You can now reset your password.'
-        ], Response::HTTP_OK);
+        return response()->json(['message' => 'OTP verified successfully. You can now reset your password.'], Response::HTTP_OK);
     }
 
     public function resetPassword(Request $request)
@@ -302,16 +293,11 @@ class UserController extends Controller
             return response()->json(['message' => 'OTP code has expired.'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Update password
         $user->password = Hash::make($request->new_password);
         $user->otp_code = null;
         $user->otp_expires_at = null;
         $user->save();
 
-        return response()->json([
-            'message' => 'Password has been reset successfully.'
-        ], Response::HTTP_OK);
+        return response()->json(['message' => 'Password has been reset successfully.'], Response::HTTP_OK);
     }
-
-
 }
