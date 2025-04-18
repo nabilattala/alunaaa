@@ -51,6 +51,9 @@ class ProductController extends Controller
                         ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                         : $product->price,
                     'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
+                    'image' => $product->image ? url('storage/' . $product->image) : null,
+                    'url' => $product->url,
+                    'status' => $product->status,
                     'created_at' => $product->created_at->format('d-m-Y H:i'),
                     'updated_at' => $product->updated_at->format('d-m-Y H:i'),
                 ];
@@ -91,6 +94,12 @@ class ProductController extends Controller
                         'expires_at' => $discount->expires_at,
                     ];
                 }),
+                'final_price' => $product->discounts->isNotEmpty()
+                    ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
+                    : $product->price,
+                'image' => $product->image ? url('storage/' . $product->image) : null,
+                'url' => $product->url,
+                'status' => $product->status,
                 'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
                 'created_at' => $product->created_at->format('d-m-Y H:i'),
                 'updated_at' => $product->updated_at->format('d-m-Y H:i'),
