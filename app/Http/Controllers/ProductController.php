@@ -54,6 +54,7 @@ class ProductController extends Controller
                     'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
                     'image' => $product->image ? url('storage/' . $product->image) : null,
                     'url' => $product->url,
+                    'video_url' => $product->video_url,
                     'status' => $product->status,
                     'created_at' => $product->created_at->format('d-m-Y H:i'),
                     'updated_at' => $product->updated_at->format('d-m-Y H:i'),
@@ -100,6 +101,7 @@ class ProductController extends Controller
                     : $product->price,
                 'image' => $product->image ? url('storage/' . $product->image) : null,
                 'url' => $product->url,
+                'video_url' => $product->video_url,
                 'status' => $product->status,
                 'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
                 'created_at' => $product->created_at->format('d-m-Y H:i'),
@@ -121,10 +123,12 @@ class ProductController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'url' => 'nullable|url',
+            'video_url' => 'nullable|url',
             'image' => 'required|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'required|exists:categories,id',
             'status' => 'required|in:active,inactive',
         ];
+        
 
         if ($user->role === 'admin') {
             $rules['price'] = 'nullable|numeric|min:0';
@@ -161,10 +165,12 @@ class ProductController extends Controller
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'url' => 'sometimes|url',
+            'video_url' => 'sometimes|url', 
             'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'sometimes|exists:categories,id',
             'status' => 'sometimes|in:active,inactive',
         ];
+        
 
         if ($user->role === 'admin') {
             $rules['price'] = 'nullable|numeric|min:0';

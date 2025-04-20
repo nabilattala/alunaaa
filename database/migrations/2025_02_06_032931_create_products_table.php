@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->string('url')->nullable();
+            $table->string('video_url')->nullable();
             $table->string('image')->nullable();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

@@ -176,6 +176,8 @@ Route::middleware('jwt.verify')->group(function () {
     // ======================
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
+    Route::middleware('role:pengguna')->post('/checkout', [OrderController::class, 'checkout']);
+
 
 
 });

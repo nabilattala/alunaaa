@@ -1,5 +1,5 @@
 @component('mail::message')
-# Terima Kasih, {{ $order->user->name }}!
+# Terima Kasih, {{ $order->user->username }}!
 
 Berikut adalah invoice untuk pesanan Anda:
 

@@ -13,12 +13,14 @@ class Product extends Model
         'title',
         'description',
         'url',
+        'video_url',
         'image',
         'category_id',
         'user_id',
+        'price',
         'status',
-        'price'
     ];
+    
 
     protected $casts = [
         'price' => 'integer',
