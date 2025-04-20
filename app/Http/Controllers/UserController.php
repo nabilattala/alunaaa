@@ -192,20 +192,35 @@ class UserController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $request->validate([
-            'address' => 'nullable|string|max:255',
+        $user = auth()->user();
+        
+        $validator = Validator::make($request->all(), [
+            'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'address' => 'nullable|string|max:500',
             'phone_number' => 'nullable|string|max:20',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        $user = auth()->user();
-
-        if ($request->has('address')) {
-            $user->address = $request->address;
+        if ($validator->fails()) {
+            return $this->apiResponse->error(
+                $validator->errors(),
+                'Validation failed.',
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
         }
 
-        if ($request->has('phone_number')) {
-            $user->phone_number = $request->phone_number;
+        $data = $request->only([
+            'username',
+            'email',
+            'address',
+            'phone_number'
+        ]);
+
+        foreach ($data as $key => $value) {
+            if ($value !== null) {
+                $user->{$key} = $value;
+            }
         }
 
         if ($request->hasFile('profile_photo')) {
@@ -213,8 +228,9 @@ class UserController extends Controller
             $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/profile_photos'), $fileName);
 
+            // Delete old photo if exists
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
-                unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
+                @unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
             }
 
             $user->profile_photo = url('uploads/profile_photos/' . $fileName);
@@ -222,7 +238,11 @@ class UserController extends Controller
 
         $user->save();
 
-        return new UserResource($user);
+        return $this->apiResponse->success(
+            new UserResource($user),
+            'Profile updated successfully.',
+            Response::HTTP_OK
+        );
     }
 
     public function setUsername(Request $request)
