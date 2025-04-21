@@ -16,34 +16,39 @@ class ProductSeeder extends Seeder
 
         $products = [
             [
-                'title' => 'Mouse Wireless Logitech M170',
-                'description' => 'Mouse wireless dengan desain ergonomis dan koneksi stabil hingga 10 meter.',
-                'url' => 'https://example.com/mouse-logitech-m170',
-                'price' => 150000,
+                'title' => 'TechCrunch',
+                'description' => 'Website berita teknologi terkemuka yang membahas startup, gadget, dan dunia digital.',
+                'url' => 'https://techcrunch.com',
+                'video_url' => 'https://www.youtube.com/watch?v=techcrunch-video',
+                'price' => 0,
             ],
             [
-                'title' => 'Keyboard Mechanical Rexus Legionare MX5.2',
-                'description' => 'Keyboard mechanical dengan switch Outemu Blue dan lampu RGB.',
-                'url' => 'https://example.com/rexus-mx5',
-                'price' => 450000,
+                'title' => 'Netflix',
+                'description' => 'Layanan streaming film dan serial terpopuler di dunia.',
+                'url' => 'https://www.netflix.com',
+                'video_url' => 'https://www.youtube.com/watch?v=netflix-trailer',
+                'price' => 149000,
             ],
             [
-                'title' => 'Headset Gaming Rexus Vonix F30',
-                'description' => 'Headset gaming dengan suara jernih dan mic fleksibel.',
-                'url' => 'https://example.com/rexus-vonix-f30',
-                'price' => 200000,
+                'title' => 'Shopee',
+                'description' => 'Marketplace online dengan berbagai produk dari kebutuhan harian hingga elektronik.',
+                'url' => 'https://shopee.co.id',
+                'video_url' => 'https://www.youtube.com/watch?v=shopee-commercial',
+                'price' => 0,
             ],
             [
-                'title' => 'Flashdisk Sandisk 32GB',
-                'description' => 'Flashdisk USB 3.0 dengan kecepatan transfer tinggi.',
-                'url' => 'https://example.com/sandisk-32gb',
-                'price' => 80000,
+                'title' => 'Canva',
+                'description' => 'Platform desain grafis online yang mudah digunakan untuk membuat berbagai jenis desain.',
+                'url' => 'https://www.canva.com',
+                'video_url' => 'https://www.youtube.com/watch?v=canva-guide',
+                'price' => 95000,
             ],
             [
-                'title' => 'Kabel Data Vivan Type-C',
-                'description' => 'Kabel data fast charging dengan panjang 1 meter.',
-                'url' => 'https://example.com/vivan-typec',
-                'price' => 50000,
+                'title' => 'LinkedIn',
+                'description' => 'Jejaring sosial profesional untuk mencari kerja, koneksi bisnis, dan berbagi informasi.',
+                'url' => 'https://www.linkedin.com',
+                'video_url' => 'https://www.youtube.com/watch?v=linkedin-tips',
+                'price' => 0,
             ],
         ];
 
@@ -53,9 +58,11 @@ class ProductSeeder extends Seeder
                     'title' => $product['title'],
                     'description' => $product['description'],
                     'url' => $product['url'],
+                    'video_url' => $product['video_url'],
                     'category_id' => $category->id,
                     'user_id' => $users->random()->id,
                     'price' => $product['price'],
+                    'status' => 'active',
                 ]);
             }
         }
