@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Discount;
 use App\Models\PriceRequest;
+use App\Exports\ProductExport;
 use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -292,4 +294,20 @@ class ProductController extends Controller
 
         return response()->json(['message' => 'Product deleted successfully'], 200);
     }
+
+    public function exportExcel()
+    {
+        if (Product::count() === 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada produk untuk di-export'
+            ], 404);
+        }
+
+        $fileName = 'products_' . now()->format('Ymd_His') . '.xlsx';
+        return Excel::download(new ProductExport, $fileName);
+    }
+
+
+
 }

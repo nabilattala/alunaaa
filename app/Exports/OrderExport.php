@@ -39,8 +39,8 @@ class OrderExport implements FromCollection, WithHeadings
         return $query->get()->map(function ($order) {
             return [
                 'Order ID' => $order->order_id,
-                'User Name' => $order->user->name,
-                'Product' => $order->product->name,
+                'User Name' => $order->user ? $order->user->name : 'Tidak Diketahui',
+                'Product' => $order->product ? $order->product->name : 'Produk Tidak Diketahui',
                 'Total Price' => $order->total_price,
                 'Status' => $order->status,
                 'Payment Status' => $order->payment_status,

@@ -17,8 +17,10 @@ use App\Http\Controllers\{
     LandingPageController,
     DashboardController,
     RatingController,
-    OrderExportController
+    OrderExportController,
 };
+
+use App\Exports\OrderExport;
 
 // ======================
 // Public Routes
@@ -141,7 +143,8 @@ Route::middleware('jwt.verify')->group(function () {
     Route::post('/reset-password', [UserController::class, 'resetPassword']);
 
     // Export Orders (Excel)
-    Route::get('/export/orders', [OrderExportController::class, 'export']);
+    Route::get('/export/orders', [OrderExportController::class, 'export'])->middleware('auth:api');
+    Route::get('/products/export', [ProductController::class, 'exportExcel'])->middleware('auth:api');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
