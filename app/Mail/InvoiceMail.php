@@ -2,7 +2,6 @@
 
 namespace App\Mail;
 
-use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -13,17 +12,14 @@ class InvoiceMail extends Mailable
 
     public $order;
 
-    public function __construct(Order $order)
+    public function __construct($order)
     {
         $this->order = $order;
     }
 
     public function build()
     {
-        return $this->markdown('emails.invoice')
-                    ->subject('Invoice Pesanan #' . $this->order->invoice_number)
-                    ->with([
-                        'order' => $this->order
-                    ]);
+        return $this->subject('Invoice Pemesanan')
+                    ->markdown('emails.invoice');
     }
 }

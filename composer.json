@@ -12,10 +12,11 @@
         "laravel/sanctum": "^3.3",
         "laravel/socialite": "^5.18",
         "laravel/tinker": "^2.8",
-        "maatwebsite/excel": "^1.1",
         "midtrans/midtrans-php": "^2.6",
         "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "^6.12",
+        "maatwebsite/excel": "^3.1",
+        "illuminate/support": "^10.0",
         "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {

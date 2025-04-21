@@ -15,8 +15,12 @@ class Product extends Model
         'description',
         'url',
         'video_url',
+<<<<<<< HEAD
         'images_path',
         'images_url',
+=======
+        'image',
+>>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
         'category_id',
         'user_id',
         'price',
