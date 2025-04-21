@@ -33,9 +33,7 @@ class ProductController extends Controller
                         'id' => $product->category->id ?? null,
                         'name' => $product->category->name ?? null,
                     ],
-                    'images' => $product->images 
-                        ? collect($product->images)->map(fn($img) => url('storage/' . $img)) 
-                        : [],
+                    'images_url' => $product->images_url,
                     'discounts' => $product->discounts->map(fn($discount) => [
                         'code' => $discount->code,
                         'percentage' => $discount->percentage,
@@ -77,9 +75,7 @@ class ProductController extends Controller
                     'id' => $product->category->id ?? null,
                     'name' => $product->category->name ?? null,
                 ],
-                'images' => $product->images 
-                    ? collect($product->images)->map(fn($img) => url('storage/' . $img)) 
-                    : [],
+                'images_url' => $product->images_url,
                 'discounts' => $product->discounts->map(fn($discount) => [
                     'code' => $discount->code,
                     'percentage' => $discount->percentage,
@@ -111,7 +107,7 @@ class ProductController extends Controller
             'description' => 'required|string',
             'url' => 'nullable|url',
             'video_url' => 'nullable|url',
-            'images.*' => 'required|image|mimes:jpg,png,jpeg|max:3060',
+            'image' => 'required|image|mimes:jpg,png,jpeg|max:3060',
             'category_id' => 'required|exists:categories,id',
             'status' => 'required|in:active,inactive',
         ];
@@ -125,17 +121,17 @@ class ProductController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $request->except(['images', 'price']);
+        $data = $request->except(['image', 'price']);
         $data['user_id'] = $user->id;
         $data['price'] = ($user->role === 'admin') ? $request->input('price', 0) : 0;
 
-        $images = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $images[] = $image->store('products', 'public');
-            }
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('products', 'public');
+            $imageUrl = Storage::disk('public')->url($imagePath);
+
+            $data['images_url'] = $imageUrl;
+            $data['images_path'] = $imagePath;
         }
-        $data['images'] = $images;
 
         $product = Product::create($data);
 
@@ -156,7 +152,7 @@ class ProductController extends Controller
             'description' => 'sometimes|string',
             'url' => 'sometimes|url',
             'video_url' => 'sometimes|url',
-            'images.*' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+            'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'sometimes|exists:categories,id',
             'status' => 'sometimes|in:active,inactive',
         ];
@@ -176,17 +172,17 @@ class ProductController extends Controller
             $data['price'] = $request->input('price');
         }
 
-        if ($request->hasFile('images')) {
-            // hapus gambar lama
-            foreach ($product->images as $oldImage) {
-                Storage::disk('public')->delete($oldImage);
+        if ($request->hasFile('image')) {
+            // Hapus gambar lama
+            if ($product->images_path) {
+            Storage::disk('public')->delete($product->images_path);
             }
 
-            $newImages = [];
-            foreach ($request->file('images') as $image) {
-                $newImages[] = $image->store('products', 'public');
-            }
-            $data['images'] = $newImages;
+            $imagePath = $request->file('image')->store('products', 'public');
+            $imageUrl = Storage::disk('public')->url($imagePath);
+
+            $data['images_url'] = $imageUrl;
+            $data['images_path'] = $imagePath;
         }
 
         $product->update($data);
@@ -279,10 +275,8 @@ class ProductController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        if ($product->images) {
-            foreach ($product->images as $image) {
-                Storage::disk('public')->delete($image);
-            }
+        if ($product->images_path) {
+            Storage::disk('public')->delete($product->images_path);
         }
 
         $product->delete();

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Product extends Model
 {
@@ -14,7 +15,8 @@ class Product extends Model
         'description',
         'url',
         'video_url',
-        'images',
+        'images_path',
+        'images_url',
         'category_id',
         'user_id',
         'price',
@@ -25,7 +27,6 @@ class Product extends Model
         'price' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'images' => 'array',
     ];
     
 
@@ -57,7 +58,7 @@ class Product extends Model
         });
 
         static::updating(function ($product) {
-            \Log::info('Updating product', [
+            Log::info('Updating product', [
                 'product_id' => $product->id,
                 'new_price' => $product->price,
                 'role' => auth()->user()->role,
