@@ -15,9 +15,5 @@ Berikut adalah invoice untuk pesanan Anda:
 
 **Total:** **Rp{{ number_format($order->total_price, 0, ',', '.') }}**
 
-@component('mail::button', ['url' => $order->payment_url])
-Bayar Sekarang
-@endcomponent
-
 Terima kasih sudah belanja di **{{ config('app.name') }}**!
 @endcomponent

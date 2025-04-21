@@ -14,7 +14,7 @@ class Product extends Model
         'description',
         'url',
         'video_url',
-        'images',
+        'image',
         'category_id',
         'user_id',
         'price',
@@ -25,7 +25,6 @@ class Product extends Model
         'price' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'images' => 'array',
     ];
     
 
