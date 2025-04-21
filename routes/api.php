@@ -43,16 +43,18 @@ Route::middleware('jwt.verify')->group(function () {
 
     // Profile & User Info
     Route::put('/user/update-profile', [UserController::class, 'updateProfile']);
+    Route::post('/user/update-profile', [UserController::class, 'updateProfile']);
     Route::post('/set-username', [UserController::class, 'setUsername']);
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/current-user', [UserController::class, 'currentUser']);
 
     // User Management (Admin Only)
     Route::prefix('users')->middleware('role:admin')->group(function () {
-        Route::get('/{id}', [UserController::class, 'show']);
-        Route::post('/', [UserController::class, 'store']);
-        Route::put('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id}', [UserController::class, 'destroy']);
+        Route::get('/detail/{id}', [UserController::class, 'show']);
+        Route::post('/create', [UserController::class, 'store']);
+        Route::put('/update/{id}', [UserController::class, 'update']); 
+        // Route::post('/delete/{id}', [UserController::class, 'update']); 
+        Route::delete('/delete/{id}', [UserController::class, 'destroy']);
     });
 
     // Categories
