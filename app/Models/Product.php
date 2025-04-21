@@ -14,19 +14,20 @@ class Product extends Model
         'description',
         'url',
         'video_url',
-        'image',
+        'images',
         'category_id',
         'user_id',
         'price',
         'status',
     ];
     
-
     protected $casts = [
         'price' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'images' => 'array',
     ];
+    
 
     public function category()
     {

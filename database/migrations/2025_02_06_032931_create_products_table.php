@@ -14,7 +14,7 @@ return new class extends Migration
             $table->text('description');
             $table->string('url')->nullable();
             $table->string('video_url')->nullable();
-            $table->string('image')->nullable();
+            $table->json('images')->nullable();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('price')->default(0);
