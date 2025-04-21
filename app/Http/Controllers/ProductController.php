@@ -42,14 +42,6 @@ class ProductController extends Controller
                         'id' => $product->category->id ?? null,
                         'name' => $product->category->name ?? null,
                     ],
-<<<<<<< HEAD
-                    'images_url' => $product->images_url,
-                    'discounts' => $product->discounts->map(fn($discount) => [
-                        'code' => $discount->code,
-                        'percentage' => $discount->percentage,
-                        'expires_at' => $discount->expires_at,
-                    ]),
-=======
                     'image_url' => $product->image ? Storage::url($product->image) : null, // <= ini ditambahkan
                     'discounts' => $product->discounts->map(function ($discount) {
                         return [
@@ -58,7 +50,6 @@ class ProductController extends Controller
                             'expires_at' => $discount->expires_at,
                         ];
                     }),
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
                     'final_price' => $product->discounts->isNotEmpty()
                         ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                         : $product->price,
@@ -100,14 +91,6 @@ class ProductController extends Controller
                     'id' => $product->category->id ?? null,
                     'name' => $product->category->name ?? null,
                 ],
-<<<<<<< HEAD
-                'images_url' => $product->images_url,
-                'discounts' => $product->discounts->map(fn($discount) => [
-                    'code' => $discount->code,
-                    'percentage' => $discount->percentage,
-                    'expires_at' => $discount->expires_at,
-                ]),
-=======
                 'discounts' => $product->discounts->map(function ($discount) {
                     return [
                         'code' => $discount->code,
@@ -115,7 +98,6 @@ class ProductController extends Controller
                         'expires_at' => $discount->expires_at,
                     ];
                 }),
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
                 'final_price' => $product->discounts->isNotEmpty()
                     ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                     : $product->price,
@@ -144,11 +126,7 @@ class ProductController extends Controller
             'description' => 'required|string',
             'url' => 'nullable|url',
             'video_url' => 'nullable|url',
-<<<<<<< HEAD
-            'image' => 'required|image|mimes:jpg,png,jpeg|max:3060',
-=======
             'image' => 'required|image|mimes:jpg,png,jpeg|max:2048',
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
             'category_id' => 'required|exists:categories,id',
             'status' => 'required|in:active,inactive',
         ];
@@ -168,15 +146,7 @@ class ProductController extends Controller
         $data['price'] = ($user->role === 'admin') ? $request->input('price', 0) : 0;
 
         if ($request->hasFile('image')) {
-<<<<<<< HEAD
-            $imagePath = $request->file('image')->store('products', 'public');
-            $imageUrl = Storage::disk('public')->url($imagePath);
-
-            $data['images_url'] = $imageUrl;
-            $data['images_path'] = $imagePath;
-=======
             $data['image'] = $request->file('image')->store('products', 'public');
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
         }
 
         $product = Product::create($data);
@@ -197,11 +167,7 @@ class ProductController extends Controller
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'url' => 'sometimes|url',
-<<<<<<< HEAD
-            'video_url' => 'sometimes|url',
-=======
             'video_url' => 'sometimes|url', 
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
             'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'sometimes|exists:categories,id',
             'status' => 'sometimes|in:active,inactive',
@@ -224,23 +190,10 @@ class ProductController extends Controller
         }
 
         if ($request->hasFile('image')) {
-<<<<<<< HEAD
-            // Hapus gambar lama
-            if ($product->images_path) {
-            Storage::disk('public')->delete($product->images_path);
-            }
-
-            $imagePath = $request->file('image')->store('products', 'public');
-            $imageUrl = Storage::disk('public')->url($imagePath);
-
-            $data['images_url'] = $imageUrl;
-            $data['images_path'] = $imagePath;
-=======
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
             $data['image'] = $request->file('image')->store('products', 'public');
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
         }
 
         $product->update($data);
@@ -333,13 +286,8 @@ class ProductController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-<<<<<<< HEAD
-        if ($product->images_path) {
-            Storage::disk('public')->delete($product->images_path);
-=======
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
->>>>>>> d1d3ebd3c1795f4b847c9b61b7441c20a5eefbe5
         }
 
         $product->delete();
