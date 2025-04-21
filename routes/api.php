@@ -41,6 +41,7 @@ Route::middleware('jwt.verify')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/update-profile', [UserController::class, 'updateProfile']);
+    Route::post('/user/update-profile', [UserController::class, 'updateProfile']);
     Route::post('/set-username', [UserController::class, 'setUsername']);
 
     // Tambahan: 
