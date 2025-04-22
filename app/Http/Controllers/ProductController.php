@@ -22,8 +22,8 @@ class ProductController extends Controller
                 $query->whereDate('expires_at', '>=', now());
             },
             'ratings',
-            'category', // load category
-            'user'      // load user
+            'category',
+            'user'
         ])->get();
 
         return response()->json([
@@ -34,15 +34,16 @@ class ProductController extends Controller
                     'description' => $product->description,
                     'price' => $product->price,
                     'user' => [
-                        'id' => $product->user_id,                          // ID user
-                        'username' => $product->user->username ?? null,     // Username user
-                    ],                          // Tambah user_id
-                    'creator_name' => $product->user->username ?? null,      // Nama pembuat
+                        'id' => $product->user_id,
+                        'username' => $product->user->username ?? null,
+                    ],
+                    'creator_name' => $product->user->username ?? null,
                     'category' => [
                         'id' => $product->category->id ?? null,
                         'name' => $product->category->name ?? null,
                     ],
-                    'image_url' => $product->image ? Storage::url($product->image) : null, // <= ini ditambahkan
+                    'image_path' => $product->images_path,
+                    'image_url' => $product->images_url ?? ($product->images_path ? 'storage/' . $product->images_path : null),
                     'discounts' => $product->discounts->map(function ($discount) {
                         return [
                             'code' => $discount->code,
@@ -54,7 +55,6 @@ class ProductController extends Controller
                         ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                         : $product->price,
                     'average_rating' => $product->ratings->avg('rating') ? round($product->ratings->avg('rating'), 1) : null,
-                    'image' => $product->image ? url('storage/' . $product->image) : null,
                     'url' => $product->url,
                     'video_url' => $product->video_url,
                     'status' => $product->status,
@@ -64,8 +64,6 @@ class ProductController extends Controller
             })
         ]);
     }
-
-
 
     public function show($id)
     {
@@ -101,7 +99,7 @@ class ProductController extends Controller
                 'final_price' => $product->discounts->isNotEmpty()
                     ? $product->price - ($product->price * ($product->discounts->first()->percentage / 100))
                     : $product->price,
-                'image' => $product->image ? url('storage/' . $product->image) : null,
+                'image' => $product->images_url ?? ($product->images_path ? 'storage/' . $product->images_path : null),
                 'url' => $product->url,
                 'video_url' => $product->video_url,
                 'status' => $product->status,
@@ -111,16 +109,14 @@ class ProductController extends Controller
             ]
         ]);
     }
-
-
     public function store(Request $request)
     {
         $user = auth()->user();
-
+    
         if (!in_array($user->role, ['admin', 'kelas'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
+    
         $rules = [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -130,79 +126,87 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'status' => 'required|in:active,inactive',
         ];
-        
-
+    
         if ($user->role === 'admin') {
             $rules['price'] = 'nullable|numeric|min:0';
         }
-
+    
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
+    
         $data = $request->except(['image', 'price']);
         $data['user_id'] = $user->id;
         $data['price'] = ($user->role === 'admin') ? $request->input('price', 0) : 0;
-
+    
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
+            $path = $request->file('image')->store('products', 'public');
+            $data['images_path'] = $path;
+            $data['images_url'] = url('storage/' . $path);  // Mengubah ke URL lengkap
         }
-
+    
         $product = Product::create($data);
-
+    
         return new ProductResource($product);
     }
-
+    
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
         $user = auth()->user();
-
+    
         if ($user->role === 'kelas' && $product->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
+    
         $rules = [
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'url' => 'sometimes|url',
-            'video_url' => 'sometimes|url', 
+            'video_url' => 'sometimes|url',
             'image' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             'category_id' => 'sometimes|exists:categories,id',
             'status' => 'sometimes|in:active,inactive',
         ];
-        
-
+    
         if ($user->role === 'admin') {
             $rules['price'] = 'nullable|numeric|min:0';
         }
-
+    
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
+    
         $data = $request->except(['image', 'price']);
-
+    
         if ($user->role === 'admin' && $request->has('price')) {
             $data['price'] = $request->input('price');
         }
-
+    
         if ($request->hasFile('image')) {
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
+            if ($product->images_path) {
+                Storage::disk('public')->delete($product->images_path);
             }
-            $data['image'] = $request->file('image')->store('products', 'public');
+    
+            $path = $request->file('image')->store('products', 'public');
+            $data['images_path'] = $path;
+            $data['images_url'] = url('storage/' . $path);  // Mengubah ke URL lengkap
         }
-
+    
         $product->update($data);
-
-        Log::info('Product updated', ['id' => $product->id, 'price' => $product->price]);
-
+    
+        Log::info('Product updated', [
+            'id' => $product->id,
+            'title' => $product->title,
+            'price' => $product->price,
+            'updated_by' => $user->id,
+        ]);
+    
         return new ProductResource($product);
     }
-
+    
     public function requestPrice(Request $request, $id)
     {
         $product = Product::findOrFail($id);
@@ -212,12 +216,10 @@ class ProductController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Cek apakah ada request yang masih pending
         if (PriceRequest::where('product_id', $id)->where('status', 'pending')->exists()) {
             return response()->json(['message' => 'Anda sudah mengajukan request harga, tunggu persetujuan admin.'], 400);
         }
 
-        // Simpan request harga tanpa menentukan harga
         $priceRequest = PriceRequest::create([
             'product_id' => $id,
             'user_id' => $user->id,
@@ -240,15 +242,11 @@ class ProductController extends Controller
         $priceRequest = PriceRequest::findOrFail($id);
         $product = Product::findOrFail($priceRequest->product_id);
 
-        // Validasi input harga
         $request->validate([
             'price' => 'required|numeric|min:0',
         ]);
 
-        // Update harga produk
         $product->update(['price' => $request->price]);
-
-        // Set request harga menjadi approved
         $priceRequest->update(['status' => 'approved']);
 
         return response()->json([
@@ -264,50 +262,19 @@ class ProductController extends Controller
         ]);
 
         $product = Product::findOrFail($id);
-        $discount = Discount::where('code', $request->code)->whereDate('expires_at', '>=', now())->first();
+        $discount = Discount::where('code', $request->code)
+                            ->whereDate('expires_at', '>=', now())
+                            ->first();
 
         if (!$discount) {
-            return response()->json(['message' => 'Invalid or expired discount code'], 400);
+            return response()->json(['message' => 'Diskon tidak valid atau sudah kedaluwarsa.'], 400);
         }
 
-        $discountedPrice = $product->price - ($product->price * ($discount->percentage / 100));
+        $product->discounts()->syncWithoutDetaching([$discount->id]);
 
         return response()->json([
-            'original_price' => $product->price,
-            'discount_percentage' => $discount->percentage,
-            'discounted_price' => $discountedPrice
+            'message' => 'Diskon berhasil diterapkan.',
+            'discount' => $discount
         ]);
     }
-
-    public function destroy($id)
-    {
-        $product = Product::findOrFail($id);
-        if (auth()->user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        if ($product->image) {
-            Storage::disk('public')->delete($product->image);
-        }
-
-        $product->delete();
-
-        return response()->json(['message' => 'Product deleted successfully'], 200);
-    }
-
-    public function exportExcel()
-    {
-        if (Product::count() === 0) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Tidak ada produk untuk di-export'
-            ], 404);
-        }
-
-        $fileName = 'products_' . now()->format('Ymd_His') . '.xlsx';
-        return Excel::download(new ProductExport, $fileName);
-    }
-
-
-
 }
