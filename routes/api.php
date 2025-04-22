@@ -132,20 +132,4 @@ Route::middleware('jwt.verify')->group(function () {
         Route::post('/discounts', [DiscountController::class, 'store']);
         Route::delete('/discounts/{id}', [DiscountController::class, 'destroy']);
     });
-
-    // Ratings
-    Route::middleware('auth:api')->post('/products/{product}/ratings', [RatingController::class, 'store']);
-    Route::get('/products/{product}/ratings', [RatingController::class, 'index']);
-
-    // OTP & Password Reset
-    Route::post('/forgot-password', [UserController::class, 'sendOtpForgotPassword']);
-    Route::post('/verify-otp', [UserController::class, 'verifyOtp']);
-    Route::post('/reset-password', [UserController::class, 'resetPassword']);
-
-    // Export Orders (Excel)
-    Route::get('/export/orders', [OrderExportController::class, 'export'])->middleware('auth:api');
-    Route::get('/products/export', [ProductController::class, 'exportExcel'])->middleware('auth:api');
-
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index']);
 });
