@@ -105,4 +105,6 @@ class OrderController extends Controller
             'message' => 'Order created, waiting for payment. Invoice has been sent to your email.'
         ]);
     }
+
+
 }

@@ -193,57 +193,66 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-        
+    
+        // Validasi input
         $validator = Validator::make($request->all(), [
-            'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
+'username' => 'nullable|string|max:255|unique:users,username,' . $user->id,
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
             'address' => 'nullable|string|max:500',
             'phone_number' => 'nullable|string|max:20',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
-
+    
         if ($validator->fails()) {
             return $this->apiResponse->error(
                 $validator->errors(),
-                'Validation failed.',
+                'Validasi gagal.',
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
-
+    
+        // Ambil data dari request
         $data = $request->only([
             'username',
             'email',
             'address',
             'phone_number'
         ]);
-
+    
+        // Update properti user
         foreach ($data as $key => $value) {
-            if ($value !== null) {
+            if (!is_null($value)) {
                 $user->{$key} = $value;
             }
         }
-
+    
+        // Jika ada file foto profil
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
             $fileName = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/profile_photos'), $fileName);
-
-            // Delete old photo if exists
+    
+            // Hapus foto lama jika ada
             if ($user->profile_photo && file_exists(public_path('uploads/profile_photos/' . basename($user->profile_photo)))) {
                 @unlink(public_path('uploads/profile_photos/' . basename($user->profile_photo)));
             }
-
+    
             $user->profile_photo = url('uploads/profile_photos/' . $fileName);
         }
-
+    
+        // Simpan perubahan
         $user->save();
-
+    
+        // Ambil ulang data user terbaru dari database
+        $freshUser = \App\Models\User::find($user->id);
+    
         return $this->apiResponse->success(
-            new UserResource($user),
-            'Profile updated successfully.',
+            new UserResource($freshUser),
+            'Profil berhasil diperbarui.',
             Response::HTTP_OK
         );
     }
+    
 
     public function setUsername(Request $request)
     {

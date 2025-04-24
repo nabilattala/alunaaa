@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             AboutSeeder::class,
 
             // Seeder untuk produk harus dijalankan sebelum order
-            ProductSeeder::class,  // <-- Tambahkan ProductSeeder sebelum OrderSeeder
+            // ProductSeeder::class,  // <-- Tambahkan ProductSeeder sebelum OrderSeeder
 
             // Seeder untuk orders, karena butuh user & produk
             OrderSeeder::class,

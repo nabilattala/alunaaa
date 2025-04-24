@@ -10,7 +10,9 @@ class CartController extends Controller
 {
     public function index()
     {
-        $cartItems = Cart::where('user_id', auth()->id())->with('product.discounts', 'product.ratings', 'product.category', 'product.user')->get();
+        $cartItems = Cart::where('user_id', auth()->id())
+            ->with('product.discounts', 'product.ratings', 'product.category', 'product.user')
+            ->get();
 
         return response()->json([
             'cart' => $cartItems->map(function ($item) {
@@ -18,7 +20,6 @@ class CartController extends Controller
 
                 return [
                     'cart_id' => $item->id,
-                    'quantity' => $item->quantity,
                     'product' => [
                         'id' => $product->id,
                         'title' => $product->title,
@@ -53,25 +54,13 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
         ]);
 
-        $cartItem = Cart::updateOrCreate(
-            ['user_id' => auth()->id(), 'product_id' => $request->product_id],
-            ['quantity' => $request->quantity]
+        $cartItem = Cart::firstOrCreate(
+            ['user_id' => auth()->id(), 'product_id' => $request->product_id]
         );
 
         return response()->json(['message' => 'Product added to cart', 'cart_id' => $cartItem->id]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $cartItem = Cart::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
-        $request->validate(['quantity' => 'required|integer|min:1']);
-
-        $cartItem->update(['quantity' => $request->quantity]);
-
-        return response()->json(['message' => 'Cart updated', 'cart_id' => $cartItem->id]);
     }
 
     public function destroy($id)

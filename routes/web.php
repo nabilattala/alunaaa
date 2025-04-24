@@ -9,4 +9,3 @@ Route::get('/', function () {
 
 // Socialite Callback (Gunakan di Web Routes)
 Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
-// changing for the future
